@@ -75,6 +75,12 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'verified:otp.show'])->group(function () {
     Route::inertia('dashboard', 'dashboard/Index')->name('dashboard');
 
+    Route::get('/search', [\App\Http\Controllers\SearchController::class, 'index'])->name('search');
+
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+
     /*
     |----------------------------------------------------------------------
     | Halaman "Proposal Saya" (Event Organizer)
