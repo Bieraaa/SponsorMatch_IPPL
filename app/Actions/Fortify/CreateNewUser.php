@@ -10,9 +10,11 @@ use App\Models\EoProfile;
 use App\Models\User;
 use App\Support\GoogleRegistration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
 /**
@@ -45,6 +47,12 @@ use Laravel\Fortify\Contracts\CreatesNewUsers;
 class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules, ProfileValidationRules;
+    
+    /** Maksimal pendaftaran valid per IP dalam 1 jam. */
+    private const MAX_REGISTRATIONS_PER_HOUR = 10;
+
+    /** Akun belum terverifikasi lebih tua dari ini boleh ditimpa pendaftaran baru. */
+    private const UNVERIFIED_TTL_HOURS = 24;
 
     /**
      * Validate and create a newly registered user.
@@ -78,6 +86,22 @@ class CreateNewUser implements CreatesNewUsers
             }
         }
 
+        // Batasi pendaftaran per IP supaya form tidak dipakai membanjiri
+        // email orang lain dengan kode OTP.
+        $limiterKey = 'register:'.request()->ip();
+
+        if (RateLimiter::tooManyAttempts($limiterKey, self::MAX_REGISTRATIONS_PER_HOUR)) {
+            $minutes = (int) ceil(RateLimiter::availableIn($limiterKey) / 60);
+
+            throw ValidationException::withMessages([
+                'email' => "Terlalu banyak percobaan pendaftaran. Coba lagi dalam {$minutes} menit.",
+            ]);
+        }
+
+        // Email yang "ditempati" akun lama yang tidak pernah diverifikasi
+        // dibebaskan lagi supaya pemilik aslinya bisa mendaftar.
+        $this->purgeStaleUnverifiedAccount($input['email'] ?? null);
+
         Validator::make($input, [
             ...$this->profileRules(),
             'role' => ['required', 'string', Rule::in(UserRole::values())],
@@ -86,7 +110,7 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $isGoogle ? ['nullable', 'string'] : $this->passwordRules(),
             // Jabatan & nomor telepon diminta di KEDUA form (sesuai Figma).
             'jabatan' => ['required', 'string', 'max:100'],
-            'nomor_telepon' => ['required', 'string', 'max:30'],
+            'nomor_telepon' => ['required', ...$this->phoneRules()],
 
             // --- Field khusus Event Organizer ---
             'nama_event_organizer' => [
@@ -109,9 +133,14 @@ class CreateNewUser implements CreatesNewUsers
                     if ($value === null || $value === '') {
                         return;
                     }
-                    if (! preg_match('/^[0-9.\-]{15,20}$/', (string) $value)) {
+                    // Hitung jumlah DIGIT-nya, bukan panjang string. Dengan
+                    // aturan lama, "..............." (15 titik) ikut lolos.
+                    $digits = preg_replace('/\D/', '', (string) $value) ?? '';
+
+                    if (preg_match('/[^0-9.\-]/', (string) $value) || ! in_array(strlen($digits), [15, 16], true)) {
                         $fail('Format NPWP tidak valid (15–16 digit angka).');
                     }
+
                     if (CompanyProfile::whereNpwp((string) $value)->exists()) {
                         $fail('NPWP ini sudah terdaftar.');
                     }
@@ -132,7 +161,12 @@ class CreateNewUser implements CreatesNewUsers
                     }
                 },
             ],
+                ], [
+            'nomor_telepon.regex' => 'Format nomor telepon tidak valid. Contoh: +62 812-3456-7890.',
         ])->validate();
+
+        // Data valid → hitung ke pembatas (kedaluwarsa dalam 1 jam).
+        RateLimiter::hit($limiterKey, 3600);
 
         return DB::transaction(function () use ($input, $role, $isGoogle) {
             $user = User::create([
@@ -206,5 +240,29 @@ class CreateNewUser implements CreatesNewUsers
 
             return $user;
         });
+    }
+    
+    /**
+     * Hapus akun lama dengan email yang sama bila tidak pernah diverifikasi
+     * dan sudah lebih dari UNVERIFIED_TTL_HOURS jam. Profil dan kode OTP-nya
+     * ikut terhapus lewat foreign key `cascadeOnDelete`.
+     */
+    private function purgeStaleUnverifiedAccount(?string $email): void
+    {
+        if (blank($email)) {
+            return;
+        }
+
+        try {
+            User::query()
+                ->where('email', $email)
+                ->whereNull('email_verified_at')
+                ->where('created_at', '<', now()->subHours(self::UNVERIFIED_TTL_HOURS))
+                ->delete();
+        } catch (\Throwable $e) {
+            // Gagal hapus (mis. terhalang foreign key): biarkan aturan
+            // `unique` yang menolak pendaftarannya seperti biasa.
+            report($e);
+        }
     }
 }

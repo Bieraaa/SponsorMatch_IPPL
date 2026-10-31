@@ -94,6 +94,25 @@ class GoogleAuthTest extends TestCase
         $this->assertNotNull($user->fresh()->email_verified_at);
     }
 
+    public function test_google_login_invalidates_password_of_unverified_account(): void
+    {
+        $user = User::factory()->unverified()->create([
+            'email' => 'korban@sponsormatch.test',
+            'password' => 'password-penyerang-123',
+        ]);
+
+        $this->fakeGoogleUser('korban@sponsormatch.test');
+
+        $this->get(route('auth.google.callback'));
+
+        $fresh = $user->fresh();
+
+        $this->assertNotNull($fresh->email_verified_at);
+        $this->assertFalse(
+            \Illuminate\Support\Facades\Hash::check('password-penyerang-123', $fresh->password),
+        );
+    }
+
     public function test_google_login_fills_name_only_when_it_is_still_empty(): void
     {
         $user = User::factory()->create([

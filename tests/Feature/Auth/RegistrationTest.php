@@ -110,6 +110,45 @@ class RegistrationTest extends TestCase
         $this->assertGuest();
     }
 
+    
+    public function test_registration_rejects_invalid_phone_number(): void
+    {
+        $response = $this->post(route('register.store'), [
+            'role' => 'eo',
+            'name' => 'Telepon Salah',
+            'email' => 'telepon-salah@test.id',
+            'jabatan' => 'Ketua',
+            'nomor_telepon' => 'abc',
+            'nama_event_organizer' => 'EO Uji',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $response->assertSessionHasErrors('nomor_telepon');
+        $this->assertGuest();
+    }
+
+    public function test_registration_is_rate_limited_per_ip(): void
+    {
+        for ($i = 0; $i < 10; $i++) {
+            \Illuminate\Support\Facades\RateLimiter::hit('register:127.0.0.1', 3600);
+        }
+
+        $response = $this->post(route('register.store'), [
+            'role' => 'eo',
+            'name' => 'Dibatasi',
+            'email' => 'dibatasi@test.id',
+            'jabatan' => 'Ketua',
+            'nomor_telepon' => '081234567890',
+            'nama_event_organizer' => 'EO Uji',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $response->assertSessionHasErrors('email');
+        $this->assertDatabaseMissing('users', ['email' => 'dibatasi@test.id']);
+    }
+
     // ------------------------------------------------------------------
     // Perusahaan
     // ------------------------------------------------------------------

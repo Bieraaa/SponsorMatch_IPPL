@@ -28,14 +28,7 @@ class ProfileUpdateRequest extends FormRequest
 
         return [
             'name' => $this->nameRules(),
-            'nomor_telepon' => [
-                'nullable',
-                'string',
-                'max:30',
-                // Format internasional: boleh diawali "+", angka, spasi,
-                // titik, tanda hubung, dan tanda kurung. Minimal 6 digit.
-                'regex:/^\+?[0-9][0-9\s().-]{5,29}$/',
-            ],
+            'nomor_telepon' => ['nullable', ...$this->phoneRules()],
             'avatar' => [
                 'nullable',
                 'image',

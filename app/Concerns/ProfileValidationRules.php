@@ -48,4 +48,20 @@ trait ProfileValidationRules
                 : Rule::unique(User::class)->ignore($userId),
         ];
     }
+
+    /**
+     * Aturan format nomor telepon — dipakai register DAN edit profil.
+     *
+     * @return array<int, string>
+     */
+    protected function phoneRules(): array
+    {
+        return [
+            'string',
+            'max:30',
+            // "+" opsional, lalu angka, spasi, titik, tanda hubung, atau kurung.
+            // Minimal 6 karakter.
+            'regex:/^\+?[0-9][0-9\s().-]{5,29}$/',
+        ];
+    }
 }

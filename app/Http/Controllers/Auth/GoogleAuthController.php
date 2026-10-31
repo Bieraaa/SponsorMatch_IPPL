@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
 use Symfony\Component\HttpFoundation\RedirectResponse as SymfonyRedirect;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -106,10 +108,18 @@ class GoogleAuthController extends Controller
 
         $changes = [];
 
-        // Google sudah MEMBUKTIKAN kepemilikan email (email-nya terverifikasi
-        // di sisi Google), jadi user ini boleh langsung ditandai terverifikasi.
+        // Google sudah MEMBUKTIKAN kepemilikan email, jadi akun yang belum
+        // terverifikasi boleh ditandai terverifikasi.
+        //
+        // TAPI akun itu bisa saja dibuat ORANG LAIN yang mengetik email ini
+        // saat mendaftar (pre-hijacking) — dia tahu passwordnya. Maka semua
+        // "kunci lama" dibuang: password diacak, remember token diganti,
+        // dan semua session lama dihapus.
         if ($user->email_verified_at === null) {
             $changes['email_verified_at'] = now();
+            $changes['password'] = Str::password(32);
+            $changes['remember_token'] = Str::random(60);
+            $this->revokeAllSessions($user);
         }
 
         // Sinkron nama HANYA kalau kolomnya masih kosong — supaya nama yang
@@ -133,5 +143,20 @@ class GoogleAuthController extends Controller
         $request->session()->forget(GoogleRegistration::SESSION_KEY);
 
         return redirect()->intended(route('dashboard'));
+    }
+
+    /**
+     * Hapus semua session aktif milik user. Hanya berlaku bila session
+     * disimpan di database (SESSION_DRIVER=database); selain itu dilewati.
+     */
+    private function revokeAllSessions(User $user): void 
+    {
+    if (config('session.driver') !== 'database') {
+        return;
+    }
+
+    DB::table(config('session.table', 'sessions'))
+        ->where('user_id', $user->getKey())
+        ->delete();
     }
 }

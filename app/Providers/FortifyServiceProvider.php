@@ -72,7 +72,15 @@ class FortifyServiceProvider extends ServiceProvider
 
         $user = \App\Models\User::where('email', $email)->first();
 
-        if ($user === null || ! Hash::check($password, $user->password)) {
+        // Hash::check SELALU dijalankan, walau emailnya tidak ada (dicek
+        // terhadap hash palsu), supaya waktu responsnya sama dan penyerang
+        // tidak bisa menebak email mana yang terdaftar dari kecepatan balasan.
+        static $dummyHash = null;
+        $dummyHash ??= Hash::make('password-palsu-untuk-pembanding-waktu');
+
+        $passwordMatches = Hash::check($password, $user?->password ?? $dummyHash);
+
+        if ($user === null || ! $passwordMatches) {
             return null;
         }
 
