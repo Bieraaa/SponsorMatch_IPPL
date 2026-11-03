@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { onBeforeUnmount, ref, computed } from 'vue';
+import { onBeforeUnmount, onMounted, ref, computed } from 'vue';
 import ProposalCreateDialog from '@/components/proposals/ProposalCreateDialog.vue';
 import ProposalDetailPanel from '@/components/proposals/ProposalDetailPanel.vue';
 import ProposalFollowUpPanel from '@/components/proposals/ProposalFollowUpPanel.vue';
@@ -44,6 +44,19 @@ const props = defineProps<{
 
 /** Dialog tambah proposal. */
 const createOpen = ref(false);
+
+onMounted(() => {
+    if (new URLSearchParams(window.location.search).has('buat')) {
+        createOpen.value = true;
+
+        // Bersihkan ?buat=1 dari URL tanpa merusak state Inertia.
+        window.history.replaceState(
+            window.history.state,
+            '',
+            window.location.pathname
+        );
+    }
+});
 
 /** Indikator loading untuk partial reload (bukan full page visit). */
 const loading = ref(false);

@@ -3,6 +3,8 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed, ref, type Component } from 'vue';
 import {
     ArrowRight,
+    ArrowUp ,
+    ArrowDown,
     Banknote,
     Bookmark,
     CalendarDays,
@@ -20,8 +22,12 @@ import {
     ThumbsDown,
     ThumbsUp,
     Upload,
+    CircleCheck,
+    Wallet,
+    Clock,
 } from '@lucide/vue';
 import { index as sponsorProposalsIndex } from '@/routes/sponsor/proposals';
+import { index as proposalsIndex } from '@/routes/proposals';
 import { index } from '@/routes/proposals';
 
 /**
@@ -53,14 +59,8 @@ const isEo = computed(() => user.value?.role !== 'sponsor');
 
 type DashboardEoData = {
     stats: {
-        terkirim: {
-            value: number;
-            diff: number;
-        };
-        disetujui: {
-            value: number;
-            diff: number;
-        };
+        terkirim: { value: number; diff: number };
+        disetujui: { value: number; diff: number };
         pendanaan: number;
         target_pendanaan: number;
         persentase_pendanaan: number;
@@ -72,14 +72,10 @@ type DashboardEoData = {
         ditinjau: number;
         negosiasi: number;
         disetujui: number;
+        ditolak: number;
+        siap_dikirim: number;
     };
-    followUps: {
-        id: number;
-        proposal: string | null;
-        company: string | null;
-        stage: string;
-        days: number | null;
-    }[];
+    followUps: { id: number; proposalId: number; title: string; description: string }[];
 };
 
 const props = defineProps<{
@@ -99,32 +95,30 @@ const companyName = computed(() => {
     return user.value?.name ?? 'Perusahaan';
 });
 
-const stats = computed(() => [
-    {
-        label: 'Proposal diterima',
-        value: props.dashboardEo?.stats.disetujui?.value ?? 0,
-        icon: ThumbsUp,
-        tint: 'text-green-600',
-    },
-    {
-        label: 'Proposal terkirim',
-        value: props.dashboardEo?.stats.terkirim?.value ?? 0,
-        icon: Send,
-        tint: 'text-sm-card',
-    },
-    {
-        label: 'Perlu tindak lanjut',
-        value: props.dashboardEo?.stats.perlu_tindak_lanjut ?? 0,
-        icon: ClipboardList,
-        tint: 'text-sm-amber',
-    },
-    {
-        label: 'Sedang ditinjau',
-        value: props.dashboardEo?.pipeline.ditinjau ?? 0,
-        icon: FileText,
-        tint: 'text-sm-card',
-    },
-]);
+const rupiah = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
+
+const statCards = computed(() => {
+    const s = props.dashboardEo?.stats;
+
+    return [
+        { key: 'terkirim', label: 'Proposal Terkirim', display: String(s?.terkirim.value ?? 0), diff: s?.terkirim.diff ?? null, icon: Send, circle: 'bg-blue-500' },
+        { key: 'disetujui', label: 'Proposal Disetujui', display: String(s?.disetujui.value ?? 0), diff: s?.disetujui.diff ?? null, icon: CircleCheck, circle: 'bg-green-500' },
+        { key: 'pendanaan', label: 'Target Pendanaan', display: `${s?.persentase_pendanaan ?? 0}%`, diff: null, icon: Wallet, circle: 'bg-orange-500' },
+        { key: 'tindak', label: 'Perlu Tindak Lanjut', display: String(s?.perlu_tindak_lanjut ?? 0), diff: null, icon: Clock, circle: 'bg-sm-red' },
+    ];
+});
+
+const pipelineSteps = computed(() => {
+    const p = props.dashboardEo?.pipeline;
+
+    return [
+        { key: 'draft', label: 'Draft', count: p?.draft ?? 0, icon: FileText, circle: 'bg-gray-100 text-gray-500', badge: 'bg-gray-100 text-gray-600', line: 'bg-gray-300' },
+        { key: 'dikirim', label: 'Dikirim', count: p?.dikirim ?? 0, icon: Send, circle: 'bg-blue-100 text-blue-600', badge: 'bg-blue-100 text-blue-700', line: 'bg-blue-300' },
+        { key: 'ditinjau', label: 'Ditinjau', count: p?.ditinjau ?? 0, icon: Eye, circle: 'bg-orange-100 text-orange-600', badge: 'bg-orange-100 text-orange-700', line: 'bg-orange-300' },
+        { key: 'negosiasi', label: 'Negosiasi', count: p?.negosiasi ?? 0, icon: MessageCircle, circle: 'bg-purple-100 text-purple-600', badge: 'bg-purple-100 text-purple-700', line: 'bg-purple-300' },
+        { key: 'disetujui', label: 'Disetujui', count: p?.disetujui ?? 0, icon: Check, circle: 'bg-green-100 text-green-600', badge: 'bg-green-100 text-green-700', line: 'bg-green-300' },
+    ];
+});
 
 const sponsors = [
     {
@@ -155,10 +149,10 @@ const matchTint = (match: number) =>
           : 'bg-red-100 text-sm-red';
 
 const quickActions = [
-    { label: 'Buat laporan', icon: FileText, href: null },
-    { label: 'Upload Proposal Event', icon: Upload, href: null },
-    { label: 'Buat Postingan', icon: Megaphone, href: null },
-    { label: 'Kelola Penawaran', icon: Handshake, href: null },
+    { label: 'Buat Proposal', icon: FileText, href: `${proposalsIndex().url}?buat=1` },
+    { label: 'Upload Proposal Event', icon: Upload, href: `${proposalsIndex().url}?buat=1` },
+    { label: 'Buat Postingan', icon: Megaphone, href: null as string | null },
+    { label: 'Kelola Penawaran', icon: Send, href: null as string | null },
 ];
 
 const posts = ref([]);
@@ -295,8 +289,8 @@ const matchBadgeTint = (match: number) =>
     match >= 80
         ? 'bg-[#46B450]'
         : match >= 50
-          ? 'bg-[#F3B300]'
-          : 'bg-[#E1443E]';
+        ? 'bg-[#F3B300]'
+        : 'bg-[#E1443E]';
 </script>
 
 <template>
@@ -312,39 +306,67 @@ const matchBadgeTint = (match: number) =>
             <!-- ---------- Kolom kiri ---------- -->
             <div class="min-w-0 space-y-8">
                 <!-- Hero sapaan (gradient merah, radius 24) -->
-                <div
-                    class="rounded-3xl bg-gradient-to-r from-sm-red to-[#630E1E] px-8 py-9 text-white"
-                >
-                    <h1 class="text-3xl font-semibold lg:text-4xl">
-                        Halo, {{ firstName }} 👋
-                    </h1>
-                    <p class="mt-3 max-w-xl text-base text-white/85 lg:text-lg">
-                        Menemukan sponsor yang tepat. SponsorMatch siap membantu
-                        menemukan mitra terbaik kamu.
-                    </p>
+                <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-sm-red to-[#630E1E] px-8 py-6 text-white shadow-sm">
+                    <div class="pointer-events-none absolute -top-20 -right-10 h-64 w-64 rounded-full bg-white/5" aria-hidden="true" />
+                    <div class="pointer-events-none absolute -bottom-24 right-40 h-56 w-56 rounded-full bg-white/5" aria-hidden="true" />
+                    <h1 class="relative text-3xl font-bold lg:text-4xl">Halo, {{ user?.name ?? 'Pengguna' }} 👋</h1>
+                    <p class="relative mt-2 text-lg font-semibold lg:text-xl">Berikut adalah ringkasan progres sponsorship event kamu.</p>
+                    <p class="relative mt-3 max-w-md text-sm text-white/90">Terus semangat! Kamu sudah selangkah lebih dekat untuk mewujudkan event yang lebih besar!</p>
                 </div>
 
-                <!-- 4 statistik proposal (kartu putih) -->
-                <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    <div
-                        v-for="stat in stats"
-                        :key="stat.label"
-                        class="rounded-2xl bg-white p-5"
-                    >
-                        <p class="text-sm text-sm-card/70">{{ stat.label }}</p>
-                        <div class="mt-2 flex items-center gap-3">
-                            <span class="text-4xl font-bold text-sm-navy">{{
-                                stat.value
-                            }}</span>
-                            <component
-                                :is="stat.icon"
-                                class="h-6 w-6"
-                                :class="stat.tint"
-                            />
+                <!-- Progress Proposal + Perlu Tindakan -->
+                <div class="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+                    <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 class="text-lg font-bold text-sm-navy">Progress Proposal Sponsorship</h2>
+                                <p class="mt-0.5 text-xs text-sky-700">Pantau status setiap proposal kamu secara real-time.</p>
+                            </div>
+                            <Link :href="proposalsIndex()" class="flex shrink-0 items-center gap-1 text-xs font-medium text-sm-navy hover:underline">
+                                Lihat semua <ArrowRight class="h-3.5 w-3.5" />
+                            </Link>
                         </div>
 
-                        
-                    </div>
+                        <ol class="mt-6 grid grid-cols-5">
+                            <li v-for="(step, i) in pipelineSteps" :key="step.key" class="relative flex flex-col items-center">
+                                <span v-if="i < pipelineSteps.length - 1" class="absolute top-5 left-1/2 h-0.5 w-full" :class="step.line" aria-hidden="true" />
+                                <span class="relative z-10 flex h-10 w-10 items-center justify-center rounded-full" :class="step.circle">
+                                    <component :is="step.icon" class="h-4 w-4" />
+                                </span>
+                                <span class="mt-2 text-xs font-semibold text-sm-navy">{{ step.label }}</span>
+                                <span class="mt-1 flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-xs font-bold" :class="step.badge">{{ step.count }}</span>
+                            </li>
+                        </ol>
+
+                        <p class="mt-4 text-[11px] text-sm-card/60">
+                            Siap dikirim: {{ props.dashboardEo?.pipeline.siap_dikirim ?? 0 }} ·
+                            Ditolak: {{ props.dashboardEo?.pipeline.ditolak ?? 0 }}
+                        </p>
+                    </section>
+
+                    <section class="overflow-hidden rounded-2xl border border-red-100 bg-white shadow-sm">
+                        <div class="flex items-center gap-3 bg-red-50 px-4 py-3">
+                            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-sm-red text-white">
+                                <CircleAlert class="h-5 w-5" />
+                            </span>
+                            <div>
+                                <h3 class="text-sm font-bold text-sm-red">Perlu Tindakan</h3>
+                                <p class="text-xs text-sm-navy/70">{{ props.dashboardEo?.stats.perlu_tindak_lanjut ?? 0 }} proposal perlu ditindaklanjuti</p>
+                            </div>
+                        </div>
+                        <ul v-if="props.dashboardEo?.followUps.length" class="divide-y divide-gray-100">
+                            <li v-for="item in props.dashboardEo.followUps" :key="item.id">
+                                <Link :href="`${proposalsIndex().url}?selected=${item.proposalId}`" class="flex items-center justify-between gap-3 px-4 py-3 hover:bg-red-50/50">
+                                    <div class="min-w-0">
+                                        <p class="truncate text-xs font-semibold text-sm-navy">{{ item.title }}</p>
+                                        <p class="truncate text-[11px] text-sm-red/80">{{ item.description }}</p>
+                                    </div>
+                                    <ChevronRight class="h-4 w-4 shrink-0 text-sm-card/50" />
+                                </Link>
+                            </li>
+                        </ul>
+                        <p v-else class="px-4 py-6 text-center text-xs text-sm-card/60">Tidak ada proposal yang perlu ditindaklanjuti.</p>
+                    </section>
                 </div>
 
                 <!-- Rekomendasi Sponsor -->
@@ -509,38 +531,29 @@ const matchBadgeTint = (match: number) =>
                 </div>
 
                 <!-- 4 statistik perusahaan -->
-                <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                    <component
-                        :is="stat.href ? Link : 'div'"
-                        v-for="stat in companyStats"
-                        :key="stat.label"
-                        :href="stat.href"
-                        class="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:gap-4 sm:p-5"
-                        :class="
-                            stat.href
-                                ? 'transition hover:-translate-y-0.5 hover:shadow-md'
-                                : ''
-                        "
-                    >
-                        <span
-                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white sm:h-12 sm:w-12"
-                            :class="stat.circle"
-                        >
-                            <component :is="stat.icon" class="h-6 w-6" />
+                                <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    <div v-for="card in statCards" :key="card.key" class="flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                        <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white" :class="card.circle">
+                            <component :is="card.icon" class="h-7 w-7" />
                         </span>
-                        <div class="min-w-0">
-                            <p
-                                class="text-[11px] font-medium text-sm-card/70 sm:text-xs"
-                            >
-                                {{ stat.label }}
-                            </p>
-                            <p
-                                class="text-[28px] leading-tight font-bold text-sm-navy"
-                            >
-                                {{ stat.value }}
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-semibold text-sm-navy">{{ card.label }}</p>
+                            <p class="text-[34px] leading-tight font-bold text-sm-navy">{{ card.display }}</p>
+
+                            <template v-if="card.key === 'pendanaan'">
+                                <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                                    <div class="h-full rounded-full bg-orange-500" :style="{ width: `${Math.min(100, props.dashboardEo?.stats.persentase_pendanaan ?? 0)}%` }" />
+                                </div>
+                                <p class="mt-1 text-[11px] text-sm-card/70">
+                                    {{ rupiah(props.dashboardEo?.stats.pendanaan ?? 0) }} / {{ rupiah(props.dashboardEo?.stats.target_pendanaan ?? 0) }}
+                                </p>
+                            </template>
+                            <p v-else-if="card.diff !== null" class="mt-1 flex items-center gap-1 text-[11px] font-medium" :class="card.diff >= 0 ? 'text-green-600' : 'text-sm-red'">
+                                <component :is="card.diff >= 0 ? ArrowUp : ArrowDown" class="h-3 w-3" />
+                                {{ Math.abs(card.diff) }} vs 30 hari sebelumnya
                             </p>
                         </div>
-                    </component>
+                    </div>
                 </div>
 
                 <!-- Rekomendasi event untuk perusahaan -->
