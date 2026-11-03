@@ -32,6 +32,15 @@ const auth = computed(() => page.props.auth);
 const roleName = computed(() =>
     auth.value.user?.role === 'sponsor' ? 'Perusahaan' : 'Event Organizer',
 );
+const displayName = computed(() => {
+    const companyName = auth.value.user?.company_name;
+
+    if (typeof companyName === 'string' && companyName.trim() !== '') {
+        return companyName;
+    }
+
+    return auth.value.user?.name ?? '';
+});
 
 const unreadCount = computed(() => Number((auth.value as any).unreadNotificationsCount || 0));
 
@@ -349,7 +358,7 @@ withDefaults(
                     >
                         <div class="hidden text-left leading-tight md:block">
                             <p class="text-sm font-semibold text-sm-card">
-                                {{ auth.user?.name }}
+                                {{ displayName }}
                             </p>
                             <p class="text-xs text-sm-card/60">
                                 {{ roleName }}
@@ -359,7 +368,7 @@ withDefaults(
                             <AvatarImage
                                 v-if="auth.user?.avatar"
                                 :src="auth.user.avatar"
-                                :alt="auth.user.name"
+                                :alt="displayName"
                             />
                             <AvatarFallback
                                 class="rounded-full bg-sm-card font-semibold text-white"

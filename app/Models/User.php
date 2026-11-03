@@ -73,14 +73,35 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         );
     }
 
+    /**
+     * Nama perusahaan untuk akun sponsor.
+     *
+     * `users.name` menyimpan nama orang yang mendaftar, sedangkan nama
+     * badan usaha ada di `company_profiles.companyName`. Dashboard dan
+     * topbar perusahaan memakai nama badan usaha agar sesuai desain.
+     * Nilainya null untuk Event Organizer.
+     */
+    protected function companyName(): Attribute
+    {
+        return Attribute::make(
+            get: function (): ?string {
+                if ($this->role !== UserRole::Perusahaan) {
+                    return null;
+                }
+
+                return $this->companyProfile?->companyName;
+            },
+        );
+    }
+
     public function eoProfile(): HasOne
     {
-        return $this->hasOne(EoProfile::class, 'user_id');
+        return $this->hasOne(EoProfile::class, 'idUser', 'id');
     }
 
     public function companyProfile(): HasOne
     {
-        return $this->hasOne(CompanyProfile::class, 'user_id');
+        return $this->hasOne(CompanyProfile::class, 'idUser', 'id');
     }
 
     public function sendPasswordResetNotification($token): void

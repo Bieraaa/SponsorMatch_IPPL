@@ -10,6 +10,8 @@ export type User = {
     nomor_telepon?: string | null;
     /** Jabatan profesional yang diisi saat pendaftaran. */
     jabatan?: string | null;
+    /** Nama badan usaha (khusus akun sponsor), diambil dari company_profiles. */
+    company_name?: string | null;
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
     created_at: string;

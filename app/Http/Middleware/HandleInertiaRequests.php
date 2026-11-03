@@ -35,13 +35,20 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
+        // Nama badan usaha hanya perlu dikirim untuk topbar/dashboard
+        // perusahaan. Append dilakukan di sini (bukan global di model)
+        // supaya serialisasi User lain tidak ikut memuat relasi profil.
+        $user?->append('company_name');
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
-                'unreadNotificationsCount' => $request->user()
-                    ? $request->user()->unreadNotifications()->count()
+                'user' => $user,
+                'unreadNotificationsCount' => $user
+                    ? $user->unreadNotifications()->count()
                     : 0,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
