@@ -18,7 +18,22 @@ class ProfileDeleteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'password' => $this->currentPasswordRules(),
+            // `confirmed` memastikan pengguna mengetik ulang password yang
+            // sama pada field `password_confirmation`.
+            'password' => [...$this->currentPasswordRules(), 'confirmed'],
+        ];
+    }
+
+    /**
+     * Pesan validasi dalam bahasa Indonesia.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'password.current_password' => 'Password yang dimasukkan salah.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
         ];
     }
 }

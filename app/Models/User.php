@@ -10,8 +10,10 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Notifications\Notifiable;
@@ -28,7 +30,23 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable, PasskeyAuthenticatable, SoftDeletes, TwoFactorAuthenticatable;
+
+    /**
+     * Stage pipeline yang dianggap sebagai kerja sama yang masih berjalan.
+     *
+     * `sent`/`viewed` masih berupa proposal yang belum disepakati, sedangkan
+     * `done` dan `rejected` sudah selesai. `negotiating`, `deal`, dan
+     * `waiting_report` berarti masih ada proses kerja sama yang aktif,
+     * sehingga akun belum boleh dihapus.
+     *
+     * @var array<int, string>
+     */
+    public const ACTIVE_COLLABORATION_STAGES = [
+        'negotiating',
+        'deal',
+        'waiting_report',
+    ];
 
     protected function casts(): array
     {
@@ -102,6 +120,50 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function companyProfile(): HasOne
     {
         return $this->hasOne(CompanyProfile::class, 'idUser', 'id');
+    }
+
+    /**
+     * Ulasan yang diterima akun ini (ditulis akun lain).
+     *
+     * @return HasMany<Review, $this>
+     */
+    public function reviewsReceived(): HasMany
+    {
+        return $this->hasMany(Review::class, 'to_user_id', 'id');
+    }
+
+    /**
+     * Ulasan yang ditulis akun ini untuk akun lain.
+     *
+     * @return HasMany<Review, $this>
+     */
+    public function reviewsWritten(): HasMany
+    {
+        return $this->hasMany(Review::class, 'from_user_id', 'id');
+    }
+
+    /**
+     * Jumlah kerja sama yang masih berjalan.
+     *
+     * EO dihitung dari proposal miliknya, sedangkan perusahaan dihitung
+     * dari tracking pipeline yang ditujukan kepadanya. Stage final
+     * (`done`/`rejected`) tidak dihitung karena kerja sama sudah selesai.
+     */
+    public function activeCollaborationCount(): int
+    {
+        $query = TrackingPipeline::query()
+            ->whereIn('stage', self::ACTIVE_COLLABORATION_STAGES);
+
+        if ($this->isCompany()) {
+            $query->where('company_user_id', $this->getKey());
+        } else {
+            $query->whereHas(
+                'proposal',
+                fn ($proposalQuery) => $proposalQuery->where('idUser', $this->getKey()),
+            );
+        }
+
+        return $query->count();
     }
 
     public function sendPasswordResetNotification($token): void

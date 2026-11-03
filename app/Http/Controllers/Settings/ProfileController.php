@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Models\Review;
 use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -25,15 +26,61 @@ class ProfileController extends Controller
     public function edit(Request $request): Response
     {
         $photo = config('sponsormatch.profile_photo');
+        $user = $request->user();
+
+        $reviews = $user->reviewsReceived()
+            ->with([
+                'fromUser.companyProfile',
+                'tracking.proposal',
+            ])
+            ->orderByDesc('createdAt')
+            ->orderByDesc('idRiviews')
+            ->get();
+
+        $reviewCount = $reviews->count();
+        $averageRating = $reviewCount > 0
+            ? round((float) $reviews->avg('rating'), 1)
+            : null;
+
+        // Rating tersimpan di `users.rating` adalah nilai utama. Kalau belum
+        // pernah diisi, tampilkan rata-rata dari ulasan yang benar-benar ada.
+        $rating = $user->rating !== null
+            ? round((float) $user->rating, 1)
+            : $averageRating;
+
+        $reviewItems = $reviews->map(function (Review $review): array {
+            $reviewer = $review->fromUser;
+
+            return [
+                'id' => $review->idRiviews,
+                'rating' => $review->rating,
+                'comment' => $review->comment,
+                'createdAt' => $review->createdAt?->toIso8601String(),
+                'reviewerName' => $reviewer?->companyName
+                    ?: ($reviewer?->name ?? 'Akun tidak tersedia'),
+                'reviewerAvatar' => $reviewer?->avatar,
+                'reviewerRole' => $reviewer?->isCompany()
+                    ? 'Perusahaan'
+                    : ($reviewer !== null ? 'Event Organizer' : null),
+                'eventTitle' => $review->tracking?->proposal?->title,
+            ];
+        })->values();
 
         return Inertia::render('profile/Index', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
             'profilePhoto' => [
                 'maxSizeKb' => $photo['max_kb'],
                 'extensions' => $photo['extensions'],
                 'mimetypes' => $photo['mimetypes'],
             ],
+            'ratingSummary' => [
+                'rating' => $rating,
+                'average' => $averageRating,
+                'reviewCount' => $reviewCount,
+            ],
+            'reviews' => $reviewItems,
+            'activeCollaborationCount' => $user->activeCollaborationCount(),
         ]);
     }
 
@@ -102,15 +149,20 @@ class ProfileController extends Controller
     public function destroy(ProfileDeleteRequest $request): RedirectResponse
     {
         $user = $request->user();
-        $avatarPath = $user->getRawOriginal('avatar');
+
+        // Kerja sama yang belum selesai harus dituntaskan lebih dulu agar
+        // tidak ada mitra yang kehilangan akses di tengah proses.
+        if ($user->activeCollaborationCount() > 0) {
+            throw ValidationException::withMessages([
+                'account' => __('Akun tidak dapat dihapus karena masih ada kerja sama yang aktif. Selesaikan semua kerja sama terlebih dahulu.'),
+            ]);
+        }
 
         Auth::logout();
 
+        // SOFT DELETE: baris user tetap ada (beserta foto & riwayat kerja
+        // sama), tetapi tidak bisa login dan tidak muncul pada query biasa.
         $user->delete();
-
-        // Setelah akun hilang, file fotonya (kalau ada) ikut dibersihkan.
-        // Helper memastikan file yang masih dipakai akun lain tidak dihapus.
-        $this->deleteAvatarFile($avatarPath);
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

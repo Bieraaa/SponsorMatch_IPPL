@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
 import { TriangleAlert, Trash2 } from '@lucide/vue';
-import { useTemplateRef } from 'vue';
+import { computed, useTemplateRef } from 'vue';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
@@ -22,11 +22,23 @@ import { Spinner } from '@/components/ui/spinner';
 /**
  * Zona Berbahaya — penghapusan akun.
  *
- * Endpoint & pengamanan TIDAK berubah: `DELETE /settings/profile` dengan
- * konfirmasi password (lihat ProfileDeleteRequest). Komponen ini hanya
- * dirapikan tampilannya agar menyatu dengan halaman Profil.
+ * Penghapusan memerlukan password + konfirmasi password. Server juga
+ * menolak penghapusan selama masih ada kerja sama aktif (lihat
+ * ProfileController). Di sisi tampilan, tombol dinonaktifkan agar
+ * pengguna mendapat penjelasan sebelum mencoba.
  */
+const props = withDefaults(
+    defineProps<{
+        activeCollaborationCount?: number;
+    }>(),
+    {
+        activeCollaborationCount: 0,
+    },
+);
+
 const passwordInput = useTemplateRef('passwordInput');
+const confirmationInput = useTemplateRef('confirmationInput');
+const canDelete = computed(() => props.activeCollaborationCount === 0);
 </script>
 
 <template>

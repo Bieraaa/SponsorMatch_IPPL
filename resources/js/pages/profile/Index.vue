@@ -6,6 +6,7 @@ import {
     CircleAlert,
     Info,
     Lock,
+    Star,
     Upload,
 } from '@lucide/vue';
 import { computed, onBeforeUnmount, ref } from 'vue';
@@ -40,11 +41,31 @@ type ProfilePhotoConfig = {
     mimetypes: string[];
 };
 
+type ProfileReview = {
+    id: number;
+    rating: number;
+    comment: string | null;
+    createdAt: string | null;
+    reviewerName: string;
+    reviewerAvatar: string | null;
+    reviewerRole: string | null;
+    eventTitle: string | null;
+};
+
+type RatingSummary = {
+    rating: number | null;
+    average: number | null;
+    reviewCount: number;
+};
+
 const props = withDefaults(
     defineProps<{
         mustVerifyEmail?: boolean;
         status?: string | null;
         profilePhoto?: ProfilePhotoConfig;
+        ratingSummary?: RatingSummary;
+        reviews?: ProfileReview[];
+        activeCollaborationCount?: number;
     }>(),
     {
         mustVerifyEmail: false,
@@ -54,6 +75,13 @@ const props = withDefaults(
             extensions: ['jpg', 'jpeg', 'png'],
             mimetypes: ['image/jpeg', 'image/png'],
         }),
+        ratingSummary: () => ({
+            rating: null,
+            average: null,
+            reviewCount: 0,
+        }),
+        reviews: () => [],
+        activeCollaborationCount: 0,
     },
 );
 
@@ -105,6 +133,26 @@ const maxSizeLabel = computed(() => {
 const avatarSrc = computed(() => previewUrl.value ?? user.value.avatar ?? null);
 const initials = computed(() => getInitials(user.value.name));
 const hasPendingAvatar = computed(() => form.avatar !== null);
+
+function roundedRating(value: number | null): number {
+    return value === null ? 0 : Math.round(value);
+}
+
+function formatRating(value: number | null): string {
+    return value === null ? '—' : value.toFixed(1);
+}
+
+function formatReviewDate(value: string | null): string {
+    if (!value) {
+        return '';
+    }
+
+    return new Date(value).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    });
+}
 
 function openFilePicker(): void {
     if (form.processing) {
@@ -436,9 +484,11 @@ const inputClass =
                         {{ serverError }}
                     </div>
 
-                    <div class="grid gap-6 md:grid-cols-2">
+                    <div
+                        class="grid items-start gap-x-6 gap-y-5 md:grid-cols-2"
+                    >
                         <!-- Nama Lengkap -->
-                        <div class="grid gap-2">
+                        <div class="grid content-start gap-2">
                             <Label
                                 for="name"
                                 class="text-sm font-semibold text-sm-navy"
@@ -467,7 +517,7 @@ const inputClass =
                         </div>
 
                         <!-- Jabatan / Peran akun (read-only) -->
-                        <div class="grid gap-2">
+                        <div class="grid content-start gap-2">
                             <Label
                                 for="jabatan"
                                 class="text-sm font-semibold text-sm-navy"
@@ -479,7 +529,7 @@ const inputClass =
                                     id="jabatan"
                                     :value="roleValue"
                                     disabled
-                                    class="h-11 w-full cursor-not-allowed appearance-none rounded-lg border border-gray-300 bg-gray-100 px-3 pr-10 text-sm text-gray-500 disabled:cursor-not-allowed"
+                                    class="h-11 w-full cursor-not-allowed appearance-none rounded-lg border border-gray-300 bg-white px-3 pr-10 text-sm text-sm-navy disabled:cursor-not-allowed disabled:opacity-100"
                                     aria-describedby="jabatan-hint"
                                 >
                                     <option value="eo">Event Organizer</option>
@@ -507,7 +557,7 @@ const inputClass =
                         </div>
 
                         <!-- Nomor Telepon -->
-                        <div class="grid gap-2">
+                        <div class="grid content-start gap-2">
                             <Label
                                 for="nomor_telepon"
                                 class="text-sm font-semibold text-sm-navy"
@@ -539,7 +589,7 @@ const inputClass =
                         </div>
 
                         <!-- Alamat Email (read-only) -->
-                        <div class="grid gap-2">
+                        <div class="grid content-start gap-2">
                             <Label
                                 for="email"
                                 class="text-sm font-semibold text-sm-navy"
@@ -555,7 +605,7 @@ const inputClass =
                                     readonly
                                     aria-readonly="true"
                                     aria-describedby="email-hint"
-                                    class="h-11 cursor-not-allowed rounded-lg border-gray-300 bg-gray-100 px-3 pr-10 text-sm text-gray-500 focus-visible:border-gray-300 focus-visible:ring-0"
+                                    class="h-11 cursor-not-allowed rounded-lg border-gray-300 bg-white px-3 pr-10 text-sm text-sm-navy focus-visible:border-gray-300 focus-visible:ring-0"
                                 />
                                 <Lock
                                     class="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-gray-400"
@@ -607,8 +657,186 @@ const inputClass =
                 </form>
             </div>
 
+            <!-- ===================== Rating & Ulasan ===================== -->
+            <section
+                class="mt-6 overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm"
+                aria-labelledby="reviews-heading"
+            >
+                <div
+                    class="flex flex-col gap-5 border-b border-gray-200 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8"
+                >
+                    <div class="min-w-0">
+                        <h2
+                            id="reviews-heading"
+                            class="text-lg font-semibold text-sm-navy"
+                        >
+                            Rating &amp; Ulasan
+                        </h2>
+                        <p class="mt-1 text-sm text-sm-card/70">
+                            Penilaian dari mitra kerja sama tentang akun kamu.
+                        </p>
+                    </div>
+
+                    <div
+                        class="flex w-fit items-center gap-4 rounded-xl bg-amber-50 px-4 py-3 ring-1 ring-amber-100"
+                    >
+                        <div class="text-center">
+                            <p
+                                class="text-3xl leading-none font-bold text-sm-navy"
+                            >
+                                {{ formatRating(ratingSummary.rating) }}
+                            </p>
+                            <p
+                                class="mt-1 text-[11px] font-medium text-sm-card/60"
+                            >
+                                dari 5
+                            </p>
+                        </div>
+                        <div>
+                            <div
+                                class="flex items-center gap-0.5"
+                                :aria-label="`Rating ${formatRating(ratingSummary.rating)} dari 5`"
+                            >
+                                <Star
+                                    v-for="star in 5"
+                                    :key="`summary-${star}`"
+                                    class="size-4"
+                                    :class="
+                                        star <=
+                                        roundedRating(ratingSummary.rating)
+                                            ? 'fill-amber-400 text-amber-400'
+                                            : 'text-gray-300'
+                                    "
+                                    aria-hidden="true"
+                                />
+                            </div>
+                            <p class="mt-1 text-xs text-sm-card/70">
+                                {{ ratingSummary.reviewCount }} ulasan diterima
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    v-if="reviews.length > 0"
+                    class="divide-y divide-gray-100"
+                >
+                    <article
+                        v-for="review in reviews"
+                        :key="review.id"
+                        class="p-6 sm:p-8"
+                    >
+                        <div class="flex items-start gap-4">
+                            <Avatar class="size-11 shrink-0">
+                                <AvatarImage
+                                    v-if="review.reviewerAvatar"
+                                    :src="review.reviewerAvatar"
+                                    :alt="`Foto ${review.reviewerName}`"
+                                    class="object-cover"
+                                />
+                                <AvatarFallback
+                                    class="bg-sm-card text-sm font-semibold text-white"
+                                >
+                                    {{
+                                        getInitials(review.reviewerName) || '?'
+                                    }}
+                                </AvatarFallback>
+                            </Avatar>
+
+                            <div class="min-w-0 flex-1">
+                                <div
+                                    class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
+                                >
+                                    <div class="min-w-0">
+                                        <p
+                                            class="truncate font-semibold text-sm-navy"
+                                        >
+                                            {{ review.reviewerName }}
+                                        </p>
+                                        <p class="mt-0.5 text-xs text-sm-card/60">
+                                            <span v-if="review.reviewerRole">
+                                                {{ review.reviewerRole }}
+                                            </span>
+                                            <span
+                                                v-if="
+                                                    review.reviewerRole &&
+                                                    review.createdAt
+                                                "
+                                            >
+                                                ·
+                                            </span>
+                                            <span v-if="review.createdAt">
+                                                {{
+                                                    formatReviewDate(
+                                                        review.createdAt,
+                                                    )
+                                                }}
+                                            </span>
+                                        </p>
+                                    </div>
+
+                                    <div
+                                        class="flex shrink-0 items-center gap-0.5"
+                                        :aria-label="`${review.rating} dari 5 bintang`"
+                                    >
+                                        <Star
+                                            v-for="star in 5"
+                                            :key="`review-${review.id}-${star}`"
+                                            class="size-4"
+                                            :class="
+                                                star <= review.rating
+                                                    ? 'fill-amber-400 text-amber-400'
+                                                    : 'text-gray-300'
+                                            "
+                                            aria-hidden="true"
+                                        />
+                                    </div>
+                                </div>
+
+                                <p
+                                    v-if="review.eventTitle"
+                                    class="mt-3 text-xs font-medium text-sm-red"
+                                >
+                                    Kerja sama: {{ review.eventTitle }}
+                                </p>
+                                <p
+                                    class="mt-2 text-sm leading-relaxed text-sm-card/80"
+                                >
+                                    {{
+                                        review.comment ||
+                                        'Tidak ada komentar pada ulasan ini.'
+                                    }}
+                                </p>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <div
+                    v-else
+                    class="flex flex-col items-center justify-center px-6 py-12 text-center"
+                >
+                    <span
+                        class="flex size-12 items-center justify-center rounded-full bg-gray-100 text-gray-400"
+                        aria-hidden="true"
+                    >
+                        <Star class="size-6" />
+                    </span>
+                    <p class="mt-3 font-semibold text-sm-navy">
+                        Belum ada ulasan
+                    </p>
+                    <p class="mt-1 max-w-md text-sm text-sm-card/60">
+                        Ulasan dari mitra kerja sama akan muncul di sini setelah
+                        kerja sama selesai.
+                    </p>
+                </div>
+            </section>
+
             <!-- ===================== Zona Berbahaya ===================== -->
-            <DeleteUser class="mt-6" />
+            <DeleteUser
+                class="mt-6"
+                :active-collaboration-count="activeCollaborationCount"
+            />
         </div>
     </div>
 </template>
