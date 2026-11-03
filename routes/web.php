@@ -3,6 +3,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\DashboardController;
 
 Route::get('/', fn () => Inertia::render('landing/Index'))->name('home');
 
@@ -73,7 +74,7 @@ Route::middleware('auth')->group(function () {
 
 
 Route::middleware(['auth', 'verified:otp.show'])->group(function () {
-    Route::inertia('dashboard', 'dashboard/Index')->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index']) ->name('dashboard');
 
     Route::get('/search', [\App\Http\Controllers\SearchController::class, 'index'])->name('search');
 

@@ -49,6 +49,36 @@ import { index as sponsorProposalsIndex } from '@/routes/sponsor/proposals';
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 const isEo = computed(() => user.value?.role !== 'sponsor');
+
+type DashboardEoData = {
+    stats: {
+        terkirim: number;
+        disetujui: number;
+        pendanaan: number;
+        target_pendanaan: number;
+        persentase_pendanaan: number;
+        perlu_tindak_lanjut: number;
+    };
+    pipeline: {
+        draft: number;
+        dikirim: number;
+        ditinjau: number;
+        negosiasi: number;
+        disetujui: number;
+    };
+    followUps: {
+        id: number;
+        proposal: string | null;
+        company: string | null;
+        stage: string;
+        days: number | null;
+    }[];
+};
+
+const props = defineProps<{
+    dashboardEo?: DashboardEoData;
+}>();
+
 const firstName = computed(
     () => (user.value?.name ?? 'Pengguna').split(' ')[0],
 );
