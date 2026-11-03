@@ -37,7 +37,6 @@ const props = withDefaults(
 );
 
 const passwordInput = useTemplateRef('passwordInput');
-const confirmationInput = useTemplateRef('confirmationInput');
 const canDelete = computed(() => props.activeCollaborationCount === 0);
 </script>
 
@@ -61,8 +60,17 @@ const canDelete = computed(() => props.activeCollaborationCount === 0);
                     Zona Berbahaya
                 </h2>
                 <p class="mt-1 text-sm text-sm-card/70">
-                    Penghapusan akun bersifat permanen dan tidak dapat
-                    dibatalkan.
+                    Akun yang dihapus tidak bisa dipakai untuk masuk lagi.
+                    Riwayat kerja sama tetap tersimpan untuk mitra kamu.
+                </p>
+                <p
+                    v-if="!canDelete"
+                    class="mt-2 text-sm font-medium text-sm-red"
+                    role="alert"
+                >
+                    Akun belum bisa dihapus: masih ada
+                    {{ activeCollaborationCount }} kerja sama aktif.
+                    Selesaikan semuanya terlebih dahulu.
                 </p>
             </div>
         </div>
@@ -72,6 +80,7 @@ const canDelete = computed(() => props.activeCollaborationCount === 0);
                 <Button
                     variant="outline"
                     class="h-11 w-full shrink-0 rounded-lg border-sm-red/50 bg-white/70 px-5 font-semibold text-sm-red hover:bg-white hover:text-sm-red-dark sm:w-auto"
+                    :disabled="!canDelete"
                     data-test="delete-user-button"
                 >
                     <Trash2 class="size-4" aria-hidden="true" />
@@ -89,11 +98,11 @@ const canDelete = computed(() => props.activeCollaborationCount === 0);
                     @error="() => passwordInput?.focus()"
                 >
                     <DialogHeader class="space-y-2">
-                        <DialogTitle>Hapus akun secara permanen?</DialogTitle>
+                        <DialogTitle>Hapus akun?</DialogTitle>
                         <DialogDescription>
-                            Seluruh data akun, proposal, dan riwayat kamu akan
-                            dihapus dan tidak dapat dikembalikan. Masukkan
-                            password untuk mengonfirmasi.
+                            Peringatan: akun kamu akan dihapus dan tidak bisa
+                            dipakai untuk masuk lagi. Masukkan password dan
+                            konfirmasi password untuk melanjutkan.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -108,6 +117,20 @@ const canDelete = computed(() => props.activeCollaborationCount === 0);
                         />
                         <InputError :message="errors.password" />
                     </div>
+
+                    <div class="grid gap-2">
+                        <Label for="delete-password-confirmation">
+                            Konfirmasi Password
+                        </Label>
+                        <PasswordInput
+                            id="delete-password-confirmation"
+                            name="password_confirmation"
+                            placeholder="Ulangi password"
+                            autocomplete="current-password"
+                        />
+                    </div>
+
+                    <InputError :message="errors.account" />
 
                     <DialogFooter class="gap-2">
                         <DialogClose as-child>

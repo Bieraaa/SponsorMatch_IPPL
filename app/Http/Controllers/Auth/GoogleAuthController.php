@@ -76,7 +76,13 @@ class GoogleAuthController extends Controller
                 ]);
         }
 
-        $user = User::where('email', $email)->first();
+        $user = User::withTrashed()->where('email', $email)->first();
+
+        if ($user?->trashed()) {
+            return redirect()
+                ->route('login')
+                ->withErrors(['email' => 'Akun dengan email ini sudah dihapus.']);
+        }
 
         if ($user !== null) {
             return $this->loginExistingUser($request, $user, $googleUser);

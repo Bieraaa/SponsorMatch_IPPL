@@ -333,6 +333,7 @@ class ProfileUpdateTest extends TestCase
             ->actingAs($user)
             ->delete(route('profile.destroy'), [
                 'password' => 'password',
+                'password_confirmation' => 'password',
             ]);
 
         $response
@@ -340,7 +341,7 @@ class ProfileUpdateTest extends TestCase
             ->assertRedirect(route('home'));
 
         $this->assertGuest();
-        $this->assertNull($user->fresh());
+        $this->assertSoftDeleted($user);
     }
 
     public function test_correct_password_must_be_provided_to_delete_account()
@@ -352,6 +353,7 @@ class ProfileUpdateTest extends TestCase
             ->from(route('profile.edit'))
             ->delete(route('profile.destroy'), [
                 'password' => 'wrong-password',
+                'password_confirmation' => 'wrong-password',
             ]);
 
         $response

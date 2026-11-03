@@ -299,7 +299,7 @@ onBeforeUnmount(() => {
 });
 
 const inputClass =
-    'h-11 rounded-lg border-gray-300 bg-white px-3 text-sm text-sm-navy placeholder:text-gray-400 focus-visible:border-sm-red focus-visible:ring-sm-red/25';
+    'h-11 rounded-lg border-gray-300 bg-white px-3 text-sm text-sm-navy placeholder:text-gray-400 focus-visible:border-sm-red focus-visible:ring-sm-red/25 dark:bg-white';
 </script>
 
 <template>
@@ -605,7 +605,7 @@ const inputClass =
                                     readonly
                                     aria-readonly="true"
                                     aria-describedby="email-hint"
-                                    class="h-11 cursor-not-allowed rounded-lg border-gray-300 bg-white px-3 pr-10 text-sm text-sm-navy focus-visible:border-gray-300 focus-visible:ring-0"
+                                    class="h-11 cursor-not-allowed rounded-lg border-gray-300 bg-white px-3 pr-10 text-sm text-sm-navy focus-visible:border-gray-300  dark:bg-white focus-visible:ring-0"
                                 />
                                 <Lock
                                     class="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-gray-400"

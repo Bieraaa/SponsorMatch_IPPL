@@ -258,7 +258,7 @@ class CreateNewUser implements CreatesNewUsers
                 ->where('email', $email)
                 ->whereNull('email_verified_at')
                 ->where('created_at', '<', now()->subHours(self::UNVERIFIED_TTL_HOURS))
-                ->delete();
+                ->forceDelete();
         } catch (\Throwable $e) {
             // Gagal hapus (mis. terhalang foreign key): biarkan aturan
             // `unique` yang menolak pendaftarannya seperti biasa.

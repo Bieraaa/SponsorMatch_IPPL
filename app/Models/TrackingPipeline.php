@@ -70,7 +70,7 @@ class TrackingPipeline extends Model
      */
     public function company(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'company_user_id', 'id');
+        return $this->belongsTo(User::class, 'company_user_id', 'id') ->withTrashed() ;
     }
 
     /**

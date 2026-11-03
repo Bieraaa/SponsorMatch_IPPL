@@ -88,7 +88,7 @@ class Proposal extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'idUser', 'id');
+        return $this->belongsTo(User::class, 'idUser', 'id') ->withTrashed() ;
     }
 
     /**

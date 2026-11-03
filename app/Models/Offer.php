@@ -74,6 +74,6 @@ class Offer extends Model
      */
     public function fromUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'from_user_id', 'id');
+        return $this->belongsTo(User::class, 'from_user_id', 'id') ->withTrashed() ;
     }
 }
