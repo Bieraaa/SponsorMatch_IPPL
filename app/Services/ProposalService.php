@@ -190,6 +190,46 @@ class ProposalService
         return $counts;
     }
 
+        /**
+     * Hitung proposal per tahap pipeline untuk Dashboard EO.
+     *
+     * Memakai statusSql() supaya tiap proposal dihitung SATU kali dan angkanya
+     * sama dengan halaman "Proposal Saya". Status 'waiting' dipecah menjadi
+     * 'viewed' (Ditinjau) dan 'negotiating' (Negosiasi).
+     *
+     * @return array<string, int>
+     */
+    public function pipelineCounts(User $user): array
+    {
+        $base = $this->statusSql('p');
+
+        $rows = DB::table('proposal as p')
+            ->where('p.idUser', $user->id)
+            ->selectRaw("CASE
+                WHEN ({$base}) = 'waiting' THEN (
+                    CASE WHEN EXISTS (
+                        SELECT 1 FROM trackingpipeline t
+                        WHERE t.idProposal = p.idProposal AND t.stage = 'negotiating'
+                    ) THEN 'negotiating' ELSE 'viewed' END
+                )
+                ELSE ({$base})
+            END as tahap")
+            ->selectRaw('count(*) as total')
+            ->groupBy('tahap')
+            ->get()
+            ->pluck('total', 'tahap');
+
+        return [
+            'draft' => (int) $rows->get('draft', 0),
+            'dikirim' => (int) $rows->get('sent', 0),
+            'ditinjau' => (int) $rows->get('viewed', 0),
+            'negosiasi' => (int) $rows->get('negotiating', 0),
+            'disetujui' => (int) $rows->get('approved', 0),
+            'ditolak' => (int) $rows->get('rejected', 0),
+            'siap_dikirim' => (int) $rows->get('ready', 0),
+        ];
+    }
+
     /**
      * Empat kartu statistik + indikator perubahan vs periode sebelumnya.
      *

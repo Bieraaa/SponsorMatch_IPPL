@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { computed, type Component } from 'vue';
+import { computed, ref, type Component } from 'vue';
 import {
     ArrowRight,
     Banknote,
@@ -22,6 +22,7 @@ import {
     Upload,
 } from '@lucide/vue';
 import { index as sponsorProposalsIndex } from '@/routes/sponsor/proposals';
+import { index } from '@/routes/proposals';
 
 /**
  * Blok A — Dashboard EO (Figma frame "Dashboard EO", export 19 Okt 2026).
@@ -52,8 +53,14 @@ const isEo = computed(() => user.value?.role !== 'sponsor');
 
 type DashboardEoData = {
     stats: {
-        terkirim: number;
-        disetujui: number;
+        terkirim: {
+            value: number;
+            diff: number;
+        };
+        disetujui: {
+            value: number;
+            diff: number;
+        };
         pendanaan: number;
         target_pendanaan: number;
         persentase_pendanaan: number;
@@ -92,27 +99,32 @@ const companyName = computed(() => {
     return user.value?.name ?? 'Perusahaan';
 });
 
-const stats = [
+const stats = computed(() => [
     {
         label: 'Proposal diterima',
-        value: 5,
+        value: props.dashboardEo?.stats.disetujui?.value ?? 0,
         icon: ThumbsUp,
         tint: 'text-green-600',
     },
     {
-        label: 'Proposal ditolak',
-        value: 2,
-        icon: ThumbsDown,
-        tint: 'text-sm-red',
+        label: 'Proposal terkirim',
+        value: props.dashboardEo?.stats.terkirim?.value ?? 0,
+        icon: Send,
+        tint: 'text-sm-card',
     },
-    { label: 'Proposal Terkirim', value: 12, icon: Send, tint: 'text-sm-card' },
     {
-        label: 'Proposal dibalas',
-        value: 3,
-        icon: FileText,
+        label: 'Perlu tindak lanjut',
+        value: props.dashboardEo?.stats.perlu_tindak_lanjut ?? 0,
+        icon: ClipboardList,
         tint: 'text-sm-amber',
     },
-];
+    {
+        label: 'Sedang ditinjau',
+        value: props.dashboardEo?.pipeline.ditinjau ?? 0,
+        icon: FileText,
+        tint: 'text-sm-card',
+    },
+]);
 
 const sponsors = [
     {
@@ -143,46 +155,13 @@ const matchTint = (match: number) =>
           : 'bg-red-100 text-sm-red';
 
 const quickActions = [
-    { label: 'Buat laporan', icon: FileText },
-    { label: 'Upload Proposal Event', icon: Upload },
-    { label: 'Buat Postingan', icon: Megaphone },
-    { label: 'Kelola Penawaran', icon: Handshake },
+    { label: 'Buat laporan', icon: FileText, href: null },
+    { label: 'Upload Proposal Event', icon: Upload, href: null },
+    { label: 'Buat Postingan', icon: Megaphone, href: null },
+    { label: 'Kelola Penawaran', icon: Handshake, href: null },
 ];
 
-const posts = [
-    {
-        title: 'Keseruan dibalik layar',
-        event: 'ITK EXPO 2026',
-        meta: 'Event · 3 hari lalu',
-        views: 124,
-        likes: 12,
-        comments: 0,
-    },
-    {
-        title: 'Kolaborasi Pendidikan demi masa depan',
-        event: 'Beasiswa Anak Bangsa',
-        meta: 'Perusahaan · 5 hari lalu',
-        views: 200,
-        likes: 150,
-        comments: 45,
-    },
-    {
-        title: 'Bank Sendiri dukung kerja sama Teknologi',
-        event: 'FinTech Day',
-        meta: 'Sponsor · 1 hari lalu',
-        views: 250,
-        likes: 150,
-        comments: 80,
-    },
-    {
-        title: 'Musik Kita Gas mencari sponsorship',
-        event: 'Music Fest 2026',
-        meta: 'Event · 1 hari lalu',
-        views: 250,
-        likes: 150,
-        comments: 80,
-    },
-];
+const posts = ref([]);
 
 /**
  * Data ringkas dashboard perusahaan. Angka & rekomendasi mengikuti frame
@@ -363,6 +342,8 @@ const matchBadgeTint = (match: number) =>
                                 :class="stat.tint"
                             />
                         </div>
+
+                        
                     </div>
                 </div>
 
@@ -423,96 +404,76 @@ const matchBadgeTint = (match: number) =>
             </div>
 
             <!-- ---------- Kolom kanan ---------- -->
+            <!-- ---------- QUICK ACTION EO ---------- -->
             <div class="min-w-0 space-y-6">
                 <!-- Aksi Cepat (panel abu #EDEDED, 4 tombol putih 2x2) -->
-                <section>
-                    <h3 class="text-sm font-semibold text-white">Aksi Cepat</h3>
-                    <div
-                        class="mt-3 grid grid-cols-2 gap-3 rounded-2xl bg-[#EDEDED] p-3"
-                    >
-                        <a
+                <section class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <h3 class="text-base font-bold text-sm-navy">Aksi Cepat</h3>
+                    <div class="mt-3 grid grid-cols-2 gap-3">
+                        <component
+                            :is="action.href ? Link : 'a'"
                             v-for="action in quickActions"
                             :key="action.label"
-                            href="#"
-                            class="flex flex-col items-start gap-2 rounded-xl bg-white p-4 text-left text-xs font-medium text-sm-card shadow-[0_1px_3px_rgba(22,30,47,0.08)] hover:shadow-[0_2px_6px_rgba(22,30,47,0.14)]"
-                            :title="`${action.label} — segera hadir`"
-                            @click.prevent
+                            :href="action.href ?? '#'"
+                            class="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-2 py-4 text-center text-xs font-medium text-sm-navy transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
+                            :title="action.href ? action.label : `${action.label} — segera hadir`"
+                            @click="!action.href && $event.preventDefault()"
                         >
-                            <component
-                                :is="action.icon"
-                                class="h-5 w-5 text-sm-red"
-                            />
+                            <component :is="action.icon" class="h-6 w-6" />
                             {{ action.label }}
-                        </a>
+                        </component>
                     </div>
                 </section>
 
                 <!-- Upgrade ke Premium (gradient merah vertikal + tombol amber) -->
-                <section
-                    class="rounded-2xl bg-gradient-to-b from-sm-red to-[#5D0F19] p-6 text-white"
-                >
-                    <h3 class="text-lg font-semibold">Upgrade ke Premium</h3>
-                    <p class="mt-2 text-sm leading-relaxed text-white/85">
-                        Dapatkan lebih banyak fitur yang memudahkanmu dalam
-                        mengelola proposal
+                <section class="rounded-2xl bg-gradient-to-br from-sm-red to-[#5D0F19] p-5 text-white shadow-sm">
+                    <div class="flex items-center gap-2">
+                        <Crown class="h-6 w-6 shrink-0 text-sm-amber" />
+                        <h3 class="text-lg font-bold">Upgrade ke Premium</h3>
+                    </div>
+                    <p class="mt-2 text-xs leading-relaxed text-white/85">
+                        Dapatkan lebih banyak fitur yang memudahkanmu dalam mengelola proposal.
                     </p>
-                    <a
-                        href="/#harga"
-                        class="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-sm-amber py-2.5 text-sm font-semibold text-sm-card transition-opacity hover:opacity-90"
-                    >
-                        Lihat Paket
+                    <a href="/#harga" class="mt-4 inline-flex items-center gap-2 rounded-md bg-sm-amber px-4 py-2 text-xs font-semibold text-sm-navy transition-opacity hover:opacity-90">
+                        Lihat Paket <ArrowRight class="h-3.5 w-3.5" />
                     </a>
                 </section>
 
                 <!-- Postingan Terbaru -->
-                <section class="rounded-2xl bg-white p-5">
+                <section class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                     <div class="flex items-center justify-between">
-                        <h3 class="font-semibold text-sm-navy">
+                        <h3 class="text-base font-bold text-sm-navy">
                             Postingan Terbaru
                         </h3>
-                        <a
-                            href="#"
-                            class="text-sm font-medium text-sm-red hover:underline"
-                            @click.prevent
-                        >
-                            Lihat postingan
-                        </a>
                     </div>
 
-                    <ul class="mt-4 divide-y divide-gray-100">
-                        <li
-                            v-for="post in posts"
-                            :key="post.title"
-                            class="py-3 first:pt-0 last:pb-0"
+                    <div
+                        v-if="posts.length === 0"
+                        class="flex flex-col items-center justify-center py-10 text-center"
+                    >
+                        <div class="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
+                            <Megaphone class="h-7 w-7 text-gray-400" />
+                        </div>
+
+                        <h4 class="text-sm font-semibold text-gray-700">
+                            Belum Ada Postingan
+                        </h4>
+
+                        <p class="mt-1 max-w-xs text-xs text-gray-500">
+                            Postingan kegiatan dan informasi organisasi yang kamu buat
+                            nantinya akan ditampilkan di sini.
+                        </p>
+                    </div>
+
+                    <div v-else class="mt-4 space-y-3">
+                        <div
+                            v-for="(post, index) in posts"
+                            :key="index"
+                            class="rounded-xl border border-gray-100 p-3"
                         >
-                            <p class="text-sm font-semibold text-sm-navy">
-                                {{ post.title }}
-                            </p>
-                            <p class="mt-0.5 text-xs text-sm-card/70">
-                                {{ post.event }}
-                            </p>
-                            <p class="mt-0.5 text-xs text-sm-card/50">
-                                {{ post.meta }}
-                            </p>
-                            <div
-                                class="mt-2 flex items-center gap-4 text-xs text-sm-card/70"
-                            >
-                                <span class="flex items-center gap-1">
-                                    <Eye class="h-3.5 w-3.5" />{{ post.views }}
-                                </span>
-                                <span class="flex items-center gap-1">
-                                    <Heart class="h-3.5 w-3.5" />{{
-                                        post.likes
-                                    }}
-                                </span>
-                                <span class="flex items-center gap-1">
-                                    <MessageCircle class="h-3.5 w-3.5" />{{
-                                        post.comments
-                                    }}
-                                </span>
-                            </div>
-                        </li>
-                    </ul>
+                            <!-- Konten postingan -->
+                        </div>
+                    </div>
                 </section>
             </div>
         </div>

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Offer;
 use App\Models\Proposal;
-use App\Models\TrackingPipeline;
+
 use App\Services\ProposalService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -25,108 +25,52 @@ class DashboardController extends Controller
             return Inertia::render('dashboard/Index');
         }
 
-        $proposalIds = Proposal::query()
-            ->where('idUser', $user->id)
-            ->select('idProposal');
+                $pipeline = $this->proposalService->pipelineCounts($user);
 
-        // Total proposal unik yang pernah dikirim ke sponsor.
-        $terkirim = TrackingPipeline::query()
-            ->whereIn('idProposal', $proposalIds)
-            ->distinct('idProposal')
-            ->count('idProposal');
+        // Perubahan dibanding periode sebelumnya (30 hari vs 30 hari sebelumnya).
+        $periode = collect($this->proposalService->stats($user, 30))->keyBy('key');
+        $selisih = fn (string $key): int => (int) ($periode[$key]['value'] - $periode[$key]['previous']);
 
-        // Tracking yang sudah disetujui.
-        $disetujui = TrackingPipeline::query()
-            ->whereIn('idProposal', $proposalIds)
-            ->where(function ($query) {
-                $query->whereIn('stage', ['deal', 'done'])
-                    ->orWhereHas('offers', function ($offerQuery) {
-                        $offerQuery->where('status', 'accepted');
-                    });
-            })
-            ->count();
+        // Total proposal yang pernah dikirim = semua tahap setelah Draft/Siap dikirim.
+        $terkirim = $pipeline['dikirim'] + $pipeline['ditinjau']
+            + $pipeline['negosiasi'] + $pipeline['disetujui'] + $pipeline['ditolak'];
 
-        // Total nominal penawaran yang diterima sponsor.
-        $pendanaan = Offer::query()
+        // Dana yang BENAR-BENAR dikonfirmasi = offer berstatus accepted.
+        $pendanaan = (int) Offer::query()
             ->where('status', 'accepted')
-            ->whereHas('tracking.proposal', function ($query) use ($user) {
-                $query->where('idUser', $user->id);
-            })
+            ->whereHas('tracking.proposal', fn ($q) => $q->where('idUser', $user->id))
             ->sum('amount');
 
-        // Total target anggaran dari proposal yang sudah disetujui.
-        $targetPendanaan = Proposal::query()
+        // Target = kebutuhan dana maksimum semua proposal non-draft (lihat pertanyaan 1).
+        $targetPendanaan = (int) Proposal::query()
             ->where('idUser', $user->id)
-            ->whereHas('trackings', function ($query) {
-                $query->where(function ($trackingQuery) {
-                    $trackingQuery->whereIn('stage', ['deal', 'done'])
-                        ->orWhereHas('offers', function ($offerQuery) {
-                            $offerQuery->where('status', 'accepted');
-                        });
-                });
-            })
+            ->where('status', '!=', 'draft')
             ->sum('budgetMax');
 
-        $persentasePendanaan = $targetPendanaan > 0
-            ? round(($pendanaan / $targetPendanaan) * 100, 1)
-            : 0;
-
-        // Data pipeline.
-        $pipeline = [
-            'draft' => Proposal::query()
-                ->where('idUser', $user->id)
-                ->where('status', 'draft')
-                ->count(),
-
-            'dikirim' => TrackingPipeline::query()
-                ->whereIn('idProposal', $proposalIds)
-                ->where('stage', 'sent')
-                ->count(),
-
-            'ditinjau' => TrackingPipeline::query()
-                ->whereIn('idProposal', $proposalIds)
-                ->where('stage', 'viewed')
-                ->count(),
-
-            'negosiasi' => TrackingPipeline::query()
-                ->whereIn('idProposal', $proposalIds)
-                ->where('stage', 'negotiating')
-                ->count(),
-
-            'disetujui' => $disetujui,
-        ];
-
-        // Gunakan logika tindak lanjut yang sudah tersedia.
         $followUpData = $this->proposalService->followUps($user);
-
-        $followUps = collect($followUpData['items'])
-            ->map(function ($item) {
-                $days = $item['sentAt']
-                    ? now()->diffInDays($item['sentAt'])
-                    : null;
-
-                return [
-                    'id' => $item['id'],
-                    'proposal' => $item['proposalTitle'],
-                    'company' => $item['companyName'],
-                    'stage' => $item['action'],
-                    'days' => $days,
-                ];
-            })
-            ->values();
 
         return Inertia::render('dashboard/Index', [
             'dashboardEo' => [
                 'stats' => [
-                    'terkirim' => $terkirim,
-                    'disetujui' => $disetujui,
-                    'pendanaan' => (int) $pendanaan,
-                    'target_pendanaan' => (int) $targetPendanaan,
-                    'persentase_pendanaan' => $persentasePendanaan,
+                    'terkirim' => ['value' => $terkirim, 'diff' => $selisih('sent')],
+                    'disetujui' => ['value' => $pipeline['disetujui'], 'diff' => $selisih('approved')],
+                    'pendanaan' => $pendanaan,
+                    'target_pendanaan' => $targetPendanaan,
+                    'persentase_pendanaan' => $targetPendanaan > 0
+                        ? (int) round($pendanaan / $targetPendanaan * 100)
+                        : 0,
                     'perlu_tindak_lanjut' => $followUpData['total'],
                 ],
                 'pipeline' => $pipeline,
-                'followUps' => $followUps,
+                'followUps' => collect($followUpData['items'])
+                    ->take(3)
+                    ->map(fn ($item) => [
+                        'id' => $item['id'],
+                        'proposalId' => $item['proposalId'],
+                        'title' => $item['actionLabel'],
+                        'description' => $item['description'],
+                    ])
+                    ->values(),
             ],
         ]);
     }
