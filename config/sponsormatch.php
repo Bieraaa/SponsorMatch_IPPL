@@ -25,4 +25,53 @@ return [
         'directory' => 'avatars',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Logo perusahaan & banner campaign
+    |--------------------------------------------------------------------------
+    | Dipakai bersama oleh validasi backend dan halaman Vue supaya batas
+    | ukuran/format yang ditampilkan sama dengan yang divalidasi server.
+    */
+    'company_logo' => [
+        'disk' => 'public',
+        'max_kb' => (int) env('COMPANY_LOGO_MAX_KB', 2048),
+        'extensions' => ['jpg', 'jpeg', 'png'],
+        'mimetypes' => ['image/jpeg', 'image/png'],
+        'directory' => 'company-logos',
+    ],
+
+    'campaign_banner' => [
+        'disk' => 'public',
+        'max_kb' => (int) env('CAMPAIGN_BANNER_MAX_KB', 2048),
+        'extensions' => ['jpg', 'jpeg', 'png'],
+        'mimetypes' => ['image/jpeg', 'image/png'],
+        'directory' => 'campaign-banners',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rekomendasi sponsor
+    |--------------------------------------------------------------------------
+    | `per_page` dikunci 6 sesuai desain (grid 3 kolom × 2 baris) dan
+    | `max_candidates` membatasi jumlah perusahaan yang dikirim ke Gemini
+    | setelah pre-filter agar hemat kuota API.
+    */
+    'recommendations' => [
+        'per_page' => 6,
+        'max_candidates' => 24,
+        'company_max_candidates' => 24,
+        'max_active_campaigns' => 5,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ekstraksi PDF (proposal & campaign)
+    |--------------------------------------------------------------------------
+    | `max_kb` mengikuti satuan validasi `max` Laravel. Nilai ini dipakai
+    | bersama oleh backend dan area upload di frontend.
+    */
+    'pdf' => [
+        'max_kb' => (int) env('PDF_MAX_KB', 5120),
+    ],
+
 ];

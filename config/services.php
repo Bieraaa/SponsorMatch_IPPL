@@ -54,4 +54,26 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL', 'http://localhost:8000').'/auth/google/callback'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Google Gemini — analisis kecocokan sponsor (AI Matching)
+    |--------------------------------------------------------------------------
+    |
+    | API key dibuat di Google AI Studio. Model default `gemini-3.8-flash`
+    | dipilih agar biaya rendah dan respons cepat; bisa diganti lewat .env
+    | tanpa mengubah kode.
+    |
+    | `verify_ssl` dapat dimatikan SEMENTARA di lingkungan lokal yang
+    | sertifikat CA-nya bermasalah. Jangan dimatikan di produksi.
+    |
+    */
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.8-flash'),
+        'endpoint' => env('GEMINI_ENDPOINT', 'https://generativelanguage.googleapis.com/v1beta'),
+        'timeout' => (int) env('GEMINI_TIMEOUT', 45),
+        'pdf_timeout' => (int) env('GEMINI_PDF_TIMEOUT', 90),
+        'verify_ssl' => filter_var(env('GEMINI_VERIFY_SSL', true), FILTER_VALIDATE_BOOL),
+    ],
+
 ];

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 
 /**
  * Tracking pipeline (tabel `trackingpipeline`).
@@ -23,8 +24,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string $stage
  * @property string $initiatedBy
  * @property string|null $agreementPath
- * @property \Illuminate\Support\Carbon $createdAt
- * @property \Illuminate\Support\Carbon $updatedAt
+ * @property string|null $message
+ * @property Carbon $createdAt
+ * @property Carbon $updatedAt
  */
 #[Fillable([
     'idProposal',
@@ -33,6 +35,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'stage',
     'initiatedBy',
     'agreementPath',
+    'message',
 ])]
 class TrackingPipeline extends Model
 {
@@ -70,7 +73,7 @@ class TrackingPipeline extends Model
      */
     public function company(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'company_user_id', 'id') ->withTrashed() ;
+        return $this->belongsTo(User::class, 'company_user_id', 'id')->withTrashed();
     }
 
     /**

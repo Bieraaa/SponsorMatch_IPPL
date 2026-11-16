@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\UserRole;
 use App\Notifications\ResetPasswordNotification;
+use App\Notifications\VerifyEmailNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -123,6 +124,26 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
+     * Campaign sponsorship milik akun perusahaan.
+     *
+     * @return HasMany<Campaign, $this>
+     */
+    public function campaigns(): HasMany
+    {
+        return $this->hasMany(Campaign::class, 'idUser', 'id');
+    }
+
+    /**
+     * Postingan yang dibuat akun ini.
+     *
+     * @return HasMany<Post, $this>
+     */
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class, 'idUser', 'id');
+    }
+
+    /**
      * Ulasan yang diterima akun ini (ditulis akun lain).
      *
      * @return HasMany<Review, $this>
@@ -169,6 +190,18 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new ResetPasswordNotification($token));
+    }
+
+    /**
+     * Email verifikasi memakai notifikasi buatan aplikasi (bahasa Indonesia,
+     * link bertanda tangan 5 menit), bukan notifikasi bawaan Laravel.
+     *
+     * Jalur utama verifikasi tetap kode OTP di /verify-otp; email ini adalah
+     * cadangan bila OTP tidak masuk.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new VerifyEmailNotification);
     }
 
     public function isEventOrganizer(): bool

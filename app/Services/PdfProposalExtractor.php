@@ -144,11 +144,21 @@ class PdfProposalExtractor
     }
 
     /**
+     * Teks mentah PDF (dipakai juga oleh PdfExtractionService untuk Gemini).
+     *
+     * @throws Throwable kalau PDF tidak bisa dibaca
+     */
+    public function text(string $absolutePath): string
+    {
+        return $this->readText($absolutePath);
+    }
+
+    /**
      * Ambil teks dari PDF.
      */
     private function readText(string $absolutePath): string
     {
-        $parser = new Parser();
+        $parser = new Parser;
         $document = $parser->parseFile($absolutePath);
 
         // Rapikan spasi ganda & banyak baris kosong supaya regex label

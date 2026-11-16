@@ -1,9 +1,19 @@
 
 <?php
 
+use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\CompanyCampaignController;
+use App\Http\Controllers\CompanyProfileController;
+use App\Http\Controllers\CompanyRecommendationController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OtpController;
+use App\Http\Controllers\ProposalController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SponsorRecommendationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\DashboardController;
+use Laravel\Fortify\Http\Controllers\RegisteredUserController;
 
 Route::get('/', fn () => Inertia::render('landing/Index'))->name('home');
 
@@ -19,10 +29,10 @@ Route::get('/', fn () => Inertia::render('landing/Index'))->name('home');
 | dashboard sebelum callback sempat diproses. Pengecekan "sudah login atau
 | belum" dilakukan di dalam controller.
 */
-Route::get('auth/google/redirect', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'redirect'])
+Route::get('auth/google/redirect', [GoogleAuthController::class, 'redirect'])
     ->name('auth.google.redirect');
 
-Route::get('auth/google/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'callback'])
+Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])
     ->name('auth.google.callback');
 
 /*
@@ -35,13 +45,12 @@ Route::get('auth/google/callback', [\App\Http\Controllers\Auth\GoogleAuthControl
 | Form di setiap halaman tetap POST ke route `register.store` (/register).
 */
 Route::middleware('guest')->group(function () {
-    Route::get('register/eo', [\Laravel\Fortify\Http\Controllers\RegisteredUserController::class, 'create'])
+    Route::get('register/eo', [RegisteredUserController::class, 'create'])
         ->name('register.eo');
 
-    Route::get('register/perusahaan', [\Laravel\Fortify\Http\Controllers\RegisteredUserController::class, 'create'])
+    Route::get('register/perusahaan', [RegisteredUserController::class, 'create'])
         ->name('register.perusahaan');
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -59,28 +68,27 @@ Route::middleware('auth')->group(function () {
     // kode sebelumnya sudah expired). Tanpa throttle, user (atau bot yang
     // sudah login) bisa refresh terus-menerus → membanjiri inbox email
     // sendiri dengan kode baru (email bombing) tanpa batas.
-    Route::get('verify-otp', [\App\Http\Controllers\OtpController::class, 'show'])
+    Route::get('verify-otp', [OtpController::class, 'show'])
         ->middleware('throttle:10,1')
         ->name('otp.show');
 
-    Route::post('verify-otp/send', [\App\Http\Controllers\OtpController::class, 'send'])
+    Route::post('verify-otp/send', [OtpController::class, 'send'])
         ->middleware('throttle:6,1')
         ->name('otp.send');
 
-    Route::post('verify-otp/verify', [\App\Http\Controllers\OtpController::class, 'verify'])
+    Route::post('verify-otp/verify', [OtpController::class, 'verify'])
         ->middleware('throttle:10,1')
         ->name('otp.verify');
 });
 
-
 Route::middleware(['auth', 'verified:otp.show'])->group(function () {
-    Route::get('dashboard', [DashboardController::class, 'index']) ->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::get('/search', [\App\Http\Controllers\SearchController::class, 'index'])->name('search');
+    Route::get('/search', [SearchController::class, 'index'])->name('search');
 
-    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
-    Route::post('/notifications/{notification}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
-    Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
     /*
     |----------------------------------------------------------------------
@@ -97,30 +105,99 @@ Route::middleware(['auth', 'verified:otp.show'])->group(function () {
     |  - POST /proposals/{tracking}/tindak-lanjut → catat follow-up baru
     |          ke tabel `follow_up_logs`.
     */
-    Route::get('proposals', [\App\Http\Controllers\ProposalController::class, 'index'])
+    Route::get('proposals', [ProposalController::class, 'index'])
         ->name('proposals.index');
 
-    Route::post('proposals', [\App\Http\Controllers\ProposalController::class, 'store'])
+    Route::post('proposals', [ProposalController::class, 'store'])
         ->name('proposals.store');
 
     // Ekstraksi isi PDF → isi form otomatis (sebelum route dengan parameter).
-    Route::post('proposals/ekstrak', [\App\Http\Controllers\ProposalController::class, 'extract'])
+    Route::post('proposals/ekstrak', [ProposalController::class, 'extract'])
         ->name('proposals.ekstrak');
 
-    Route::post('proposals/{proposal}/publish', [\App\Http\Controllers\ProposalController::class, 'publish'])
+    Route::post('proposals/{proposal}/publish', [ProposalController::class, 'publish'])
         ->name('proposals.publish');
 
-    Route::get('proposals/{proposal}/send', [\App\Http\Controllers\ProposalController::class, 'showSendForm'])
+    Route::get('proposals/{proposal}/send', [ProposalController::class, 'showSendForm'])
         ->name('proposals.send');
 
-    Route::post('proposals/{proposal}/send', [\App\Http\Controllers\ProposalController::class, 'send'])
+    Route::post('proposals/{proposal}/send', [ProposalController::class, 'send'])
         ->name('proposals.send.store');
 
-    Route::get('proposals/{proposal}/dokumen', [\App\Http\Controllers\ProposalController::class, 'download'])
+    Route::get('proposals/{proposal}/dokumen', [ProposalController::class, 'download'])
         ->name('proposals.dokumen');
 
-    Route::post('proposals/{tracking}/tindak-lanjut', [\App\Http\Controllers\ProposalController::class, 'followUp'])
+    Route::post('proposals/{tracking}/tindak-lanjut', [ProposalController::class, 'followUp'])
         ->name('proposals.tindak-lanjut');
+
+    /*
+    |----------------------------------------------------------------------
+    | Rekomendasi Sponsor (Event Organizer)
+    |----------------------------------------------------------------------
+    | GET  /recommendations          → daftar rekomendasi (6 per halaman)
+    | POST /recommendations/refresh  → paksa analisis ulang dengan AI
+    */
+    Route::get('recommendations', [SponsorRecommendationController::class, 'index'])
+        ->name('recommendations.index');
+
+    Route::post('recommendations/refresh', [SponsorRecommendationController::class, 'refresh'])
+        ->name('recommendations.refresh');
+
+    /*
+    |----------------------------------------------------------------------
+    | Profil & campaign perusahaan
+    |----------------------------------------------------------------------
+    | Halaman detail dapat dibuka semua pengguna login (EO melihat profil
+    | sponsor). Pengelolaan profil/campaign dibatasi role perusahaan di
+    | dalam controller.
+    */
+    Route::get('companies/{company}', [CompanyProfileController::class, 'show'])
+        ->name('companies.show');
+
+    Route::prefix('company')->name('company.')->group(function () {
+        Route::get('profile', [CompanyProfileController::class, 'edit'])
+            ->name('profile.edit');
+
+        Route::patch('profile', [CompanyProfileController::class, 'update'])
+            ->name('profile.update');
+
+        Route::get('campaigns', [CompanyCampaignController::class, 'index'])
+            ->name('campaigns.index');
+
+        // Ekstraksi PDF campaign → isi form. Harus di atas route {campaign}.
+        Route::post('campaigns/ekstrak', [CompanyCampaignController::class, 'extract'])
+            ->name('campaigns.ekstrak');
+
+        Route::post('campaigns', [CompanyCampaignController::class, 'store'])
+            ->name('campaigns.store');
+
+        Route::patch('campaigns/{campaign}', [CompanyCampaignController::class, 'update'])
+            ->name('campaigns.update');
+
+        Route::post('campaigns/{campaign}/status', [CompanyCampaignController::class, 'updateStatus'])
+            ->name('campaigns.status');
+
+        Route::delete('campaigns/{campaign}', [CompanyCampaignController::class, 'destroy'])
+            ->name('campaigns.destroy');
+
+        /*
+        |------------------------------------------------------------------
+        | Rekomendasi proposal EO untuk perusahaan
+        |------------------------------------------------------------------
+        | GET  /company/recommendations                          → daftar
+        | POST /company/recommendations/refresh                  → analisis ulang
+        | POST /company/recommendations/{proposal}/interest      → ajukan
+        |      penawaran lewat alur trackingpipeline yang sudah ada
+        */
+        Route::get('recommendations', [CompanyRecommendationController::class, 'index'])
+            ->name('recommendations.index');
+
+        Route::post('recommendations/refresh', [CompanyRecommendationController::class, 'refresh'])
+            ->name('recommendations.refresh');
+
+        Route::post('recommendations/{proposal}/interest', [CompanyRecommendationController::class, 'interest'])
+            ->name('recommendations.interest');
+    });
 });
 
 /*
@@ -129,11 +206,11 @@ Route::middleware(['auth', 'verified:otp.show'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'verified:otp.show'])->prefix('sponsor')->name('sponsor.')->group(function () {
-    Route::get('proposals', [\App\Http\Controllers\Sponsor\ProposalController::class, 'index'])->name('proposals.index');
-    Route::get('proposals/{tracking}', [\App\Http\Controllers\Sponsor\ProposalController::class, 'show'])->name('proposals.show');
-    Route::post('proposals/{tracking}/offer', [\App\Http\Controllers\Sponsor\ProposalController::class, 'offer'])->name('proposals.offer');
-    Route::post('proposals/{tracking}/respond', [\App\Http\Controllers\Sponsor\ProposalController::class, 'respond'])->name('proposals.respond');
-    Route::get('proposals/{proposal}/dokumen', [\App\Http\Controllers\Sponsor\ProposalController::class, 'download'])->name('proposals.dokumen');
+    Route::get('proposals', [App\Http\Controllers\Sponsor\ProposalController::class, 'index'])->name('proposals.index');
+    Route::get('proposals/{tracking}', [App\Http\Controllers\Sponsor\ProposalController::class, 'show'])->name('proposals.show');
+    Route::post('proposals/{tracking}/offer', [App\Http\Controllers\Sponsor\ProposalController::class, 'offer'])->name('proposals.offer');
+    Route::post('proposals/{tracking}/respond', [App\Http\Controllers\Sponsor\ProposalController::class, 'respond'])->name('proposals.respond');
+    Route::get('proposals/{proposal}/dokumen', [App\Http\Controllers\Sponsor\ProposalController::class, 'download'])->name('proposals.dokumen');
 });
 
 require __DIR__.'/settings.php';

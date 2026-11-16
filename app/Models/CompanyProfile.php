@@ -5,7 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Crypt;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Profil Perusahaan (tabel `company_profiles`, rancangan ERD).
@@ -31,7 +33,21 @@ use Illuminate\Support\Facades\Crypt;
  * (satu perusahaan tidak boleh mendaftar dua kali) tanpa perlu mendekripsi
  * seluruh tabel.
  */
-#[Fillable(['idUser', 'companyName', 'nib', 'npwp', 'industry', 'campaign_Target'])]
+#[Fillable([
+    'idUser',
+    'companyName',
+    'nib',
+    'npwp',
+    'industry',
+    'campaign_Target',
+    'description',
+    'website',
+    'logo_path',
+    'sponsorship_min',
+    'sponsorship_max',
+    'event_types',
+    'target_audience',
+])]
 class CompanyProfile extends Model
 {
     protected $table = 'company_profiles';
@@ -49,7 +65,67 @@ class CompanyProfile extends Model
             // Nilai asli NPWP/NIB disimpan terenkripsi (AES-256 via APP_KEY).
             'nib' => 'encrypted',
             'npwp' => 'encrypted',
+            'sponsorship_min' => 'integer',
+            'sponsorship_max' => 'integer',
         ];
+    }
+
+    /**
+     * URL publik logo perusahaan.
+     *
+     * Di database hanya disimpan PATH relatif (mis. `company-logos/1.png`).
+     * Accessor ini mengubahnya menjadi URL yang siap dipakai `<img src>`.
+     */
+    public function logoUrl(): ?string
+    {
+        if (blank($this->logo_path)) {
+            return null;
+        }
+
+        if (str_starts_with((string) $this->logo_path, 'http://')
+            || str_starts_with((string) $this->logo_path, 'https://')) {
+            return $this->logo_path;
+        }
+
+        return Storage::disk('public')->url($this->logo_path);
+    }
+
+    /**
+     * Profil dianggap lengkap bila informasi inti untuk rekomendasi AI
+     * sudah terisi. Perusahaan tanpa profil lengkap tidak diikutkan
+     * dalam proses matching.
+     */
+    public function isComplete(): bool
+    {
+        return filled($this->companyName)
+            && filled($this->industry);
+    }
+
+    /**
+     * Kategori sponsorship yang diminati perusahaan.
+     *
+     * @return BelongsToMany<Kategori, $this>
+     */
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Kategori::class,
+            'company_categories',
+            'idCompany',
+            'idKategori',
+            'idCompany',
+            'idKategori',
+        );
+    }
+
+    /**
+     * Campaign milik perusahaan pemilik profil ini.
+     *
+     * @return HasMany<Campaign, $this>
+     */
+    public function campaigns()
+    {
+        return $this->hasMany(Campaign::class, 'idUser', 'idUser');
     }
 
     /**

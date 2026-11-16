@@ -55,6 +55,7 @@ type ExtractResponse = {
     fields: Record<string, string | number | null>;
     filled: string[];
     textLength: number;
+    source?: 'gemini' | 'regex';
 };
 
 const inputClass =
@@ -94,6 +95,7 @@ const selectedFile = ref<{ name: string; size: number } | null>(null);
 const extracting = ref(false);
 const extractError = ref<string | null>(null);
 const extractedLabels = ref<string[]>([]);
+const extractedByAi = ref(false);
 
 watch(
     () => props.open,
@@ -106,6 +108,7 @@ watch(
         selectedFile.value = null;
         extractError.value = null;
         extractedLabels.value = [];
+        extractedByAi.value = false;
         formKey.value++;
     },
 );
@@ -241,6 +244,7 @@ async function extractFromPdf(): Promise<void> {
     extracting.value = true;
     extractError.value = null;
     extractedLabels.value = [];
+    extractedByAi.value = false;
 
     try {
         const body = new FormData();
@@ -272,6 +276,7 @@ async function extractFromPdf(): Promise<void> {
 
         applyExtracted(payload?.fields ?? {});
         extractedLabels.value = payload?.filled ?? [];
+        extractedByAi.value = payload?.source === 'gemini';
     } catch {
         extractError.value = 'Tidak bisa menghubungi server. Periksa koneksimu lalu coba lagi.';
     } finally {
@@ -352,6 +357,7 @@ async function extractFromPdf(): Promise<void> {
                                 class="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1.5"
                             >
                                 <p class="text-[11px] font-medium text-emerald-700">
+                                    <template v-if="extractedByAi">Hasil ekstraksi AI · </template>
                                     {{ extractedLabels.length }} bagian terisi otomatis. Periksa lagi sebelum menyimpan.
                                 </p>
                                 <div class="mt-1 flex flex-wrap gap-1">

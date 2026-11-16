@@ -78,8 +78,44 @@ type DashboardEoData = {
     followUps: { id: number; proposalId: number; title: string; description: string }[];
 };
 
+type DashboardCompanyData = {
+    stats: {
+        campaign_total: number;
+        campaign_active: number;
+        proposals_received: number;
+        active_collaborations: number;
+        deals: number;
+        pending_offers: number;
+    };
+    campaigns: {
+        id: number;
+        title: string;
+        status: string;
+        is_active: boolean;
+    }[];
+    recommendations: {
+        proposal_id: number;
+        title: string;
+        match: number;
+        category: string;
+        date: string;
+        location: string | null;
+        budget: string;
+        description: string | null;
+        href: string;
+    }[];
+    recommendation_ai: {
+        generated: boolean;
+        message: string | null;
+    };
+    has_campaigns: boolean;
+    has_profile: boolean;
+    optional_message: string;
+};
+
 const props = defineProps<{
     dashboardEo?: DashboardEoData;
+    companyDashboard?: DashboardCompanyData;
 }>();
 
 const firstName = computed(
@@ -166,87 +202,72 @@ type RouteHref = ReturnType<typeof sponsorProposalsIndex>;
 
 type CompanyStat = {
     label: string;
-    value: number;
+    value: number | string;
     icon: Component;
     circle: string;
-    href?: RouteHref;
+    href?: string;
 };
 
-const companyStats: CompanyStat[] = [
-    {
-        label: 'Campaign aktif',
-        value: 5,
-        icon: ClipboardList,
-        circle: 'bg-[#46B450]',
-    },
-    {
-        label: 'Event disponsori',
-        value: 2,
-        icon: CalendarDays,
-        circle: 'bg-[#F7836B]',
-    },
-    {
-        label: 'Proposal Masuk',
-        value: 12,
-        icon: Send,
-        circle: 'bg-[#5B7DBE]',
-        href: sponsorProposalsIndex(),
-    },
-    {
-        label: 'Penawaran',
-        value: 1,
-        icon: Handshake,
-        circle: 'bg-[#F3B300]',
-    },
-];
+/**
+ * Statistik nyata dari `companyDashboard`. Campaign TIDAK wajib: angka 0
+ * pada "Campaign aktif" bukan berarti perusahaan tidak bisa menerima
+ * proposal.
+ */
+const companyStats = computed<CompanyStat[]>(() => {
+    const stats = props.companyDashboard?.stats;
 
-const companyRecommendations = [
-    {
-        title: 'Tech Summit',
-        match: 92,
-        category: 'Seminar',
-        date: '12 - 14 November',
-        location: 'Jakarta Hall',
-        budget: 'Rp 50.000 - Rp 100.000',
-        description:
-            'Event Teknologi tahunan yang menghadirkan pembicara global dan inovasi terbaru.',
-    },
-    {
-        title: 'ITK FEST',
-        match: 55,
-        category: 'Festival',
-        date: '31 Oktober',
-        location: 'Institut Teknologi Kalimantan',
-        budget: 'Rp 50.000 - Rp 100.000',
-        description:
-            'Event Institut Teknologi Kalimantan yang diadakan untuk memperingati Dies Natalis pada setiap tahun.',
-    },
-    {
-        title: 'Medical Check',
-        match: 25,
-        category: 'Kesehatan',
-        date: '20 Desember',
-        location: 'Samarinda Hall',
-        budget: 'Rp 250.000 - Rp 250.000',
-        description:
-            'Kegiatan medical check-up yang terbuka untuk masyarakat sekitar kota Samarinda.',
-    },
-];
+    return [
+        {
+            label: 'Campaign aktif',
+            value: stats?.campaign_active ?? 0,
+            icon: ClipboardList,
+            circle: 'bg-[#46B450]',
+            href: '/company/campaigns',
+        },
+        {
+            label: 'Proposal Masuk',
+            value: stats?.proposals_received ?? 0,
+            icon: Send,
+            circle: 'bg-[#5B7DBE]',
+            href: sponsorProposalsIndex().url,
+        },
+        {
+            label: 'Kolaborasi aktif',
+            value: stats?.active_collaborations ?? 0,
+            icon: CalendarDays,
+            circle: 'bg-[#F7836B]',
+        },
+        {
+            label: 'Penawaran',
+            value: stats?.pending_offers ?? 0,
+            icon: Handshake,
+            circle: 'bg-[#F3B300]',
+        },
+    ];
+});
+
+const dashboardRecommendations = computed(
+    () => props.companyDashboard?.recommendations ?? [],
+);
 
 type CompanyQuickAction = {
     label: string;
     icon: Component;
-    href?: RouteHref;
+    href?: string;
 };
 
 const companyQuickActions: CompanyQuickAction[] = [
-    { label: 'Buat laporan', icon: FileText },
-    { label: 'Upload Campaign', icon: Upload },
-    { label: 'Buat Postingan', icon: Megaphone },
+    { label: 'Kelola Campaign', icon: Megaphone, href: '/company/campaigns' },
     {
-        label: 'Kelola Penawaran',
+        label: 'Buat Campaign',
+        icon: Upload,
+        href: '/company/campaigns?create=1',
+    },
+    { label: 'Profil Perusahaan', icon: FileText, href: '/company/profile' },
+    {
+        label: 'Proposal Masuk',
         icon: Handshake,
-        href: sponsorProposalsIndex(),
+        href: sponsorProposalsIndex().url,
     },
 ];
 
@@ -531,40 +552,82 @@ const matchBadgeTint = (match: number) =>
                 </div>
 
                 <!-- 4 statistik perusahaan -->
-                                <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    <div v-for="card in statCards" :key="card.key" class="flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    <component
+                        :is="card.href ? Link : 'div'"
+                        v-for="card in companyStats"
+                        :key="card.label"
+                        :href="card.href"
+                        class="flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+                        :class="card.href ? 'transition-shadow hover:shadow-md' : ''"
+                    >
                         <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white" :class="card.circle">
                             <component :is="card.icon" class="h-7 w-7" />
                         </span>
                         <div class="min-w-0 flex-1">
                             <p class="text-sm font-semibold text-sm-navy">{{ card.label }}</p>
-                            <p class="text-[34px] leading-tight font-bold text-sm-navy">{{ card.display }}</p>
-
-                            <template v-if="card.key === 'pendanaan'">
-                                <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-gray-200">
-                                    <div class="h-full rounded-full bg-orange-500" :style="{ width: `${Math.min(100, props.dashboardEo?.stats.persentase_pendanaan ?? 0)}%` }" />
-                                </div>
-                                <p class="mt-1 text-[11px] text-sm-card/70">
-                                    {{ rupiah(props.dashboardEo?.stats.pendanaan ?? 0) }} / {{ rupiah(props.dashboardEo?.stats.target_pendanaan ?? 0) }}
-                                </p>
-                            </template>
-                            <p v-else-if="card.diff !== null" class="mt-1 flex items-center gap-1 text-[11px] font-medium" :class="card.diff >= 0 ? 'text-green-600' : 'text-sm-red'">
-                                <component :is="card.diff >= 0 ? ArrowUp : ArrowDown" class="h-3 w-3" />
-                                {{ Math.abs(card.diff) }} vs 30 hari sebelumnya
+                            <p class="text-[34px] leading-tight font-bold text-sm-navy">{{ card.value }}</p>
+                            <p class="mt-1 text-[11px] text-sm-card/60">
+                                {{ card.label === 'Campaign aktif' ? 'Campaign yang sedang berjalan' : 'Data terbaru dari aktivitas kamu' }}
                             </p>
                         </div>
-                    </div>
+                    </component>
+                </div>
+
+                <!-- Catatan: campaign bersifat opsional -->
+                <div
+                    v-if="props.companyDashboard && !props.companyDashboard.has_campaigns"
+                    class="flex flex-col gap-3 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <p class="text-[11px] leading-relaxed text-sm-card/80">
+                        {{ props.companyDashboard.optional_message }}
+                    </p>
+                    <Link
+                        href="/company/campaigns?create=1"
+                        class="inline-flex shrink-0 items-center justify-center rounded-lg bg-sm-red px-3 py-2 text-[11px] font-semibold text-white transition-colors hover:bg-sm-red-dark"
+                    >
+                        Buat Campaign
+                    </Link>
                 </div>
 
                 <!-- Rekomendasi event untuk perusahaan -->
                 <section>
-                    <h2 class="text-xl font-semibold text-sm-navy lg:text-2xl">
-                        Rekomendasi Sponsor
-                    </h2>
-                    <div class="mt-4 grid gap-4 md:grid-cols-3">
+                    <div class="flex items-end justify-between gap-3">
+                        <h2 class="text-xl font-semibold text-sm-navy lg:text-2xl">
+                            Rekomendasi Sponsor
+                        </h2>
+                        <Link
+                            href="/company/recommendations"
+                            class="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-sm-red hover:text-sm-red-dark"
+                        >
+                            Lihat semua
+                            <ArrowRight class="h-3.5 w-3.5" />
+                        </Link>
+                    </div>
+
+                    <div
+                        v-if="dashboardRecommendations.length === 0"
+                        class="mt-4 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center"
+                    >
+                        <p class="text-sm font-semibold text-sm-navy">
+                            Belum ada rekomendasi event
+                        </p>
+                        <p class="mx-auto mt-1 max-w-md text-[11px] leading-relaxed text-sm-card/65">
+                            Lengkapi profil perusahaan atau perbarui rekomendasi
+                            agar AI dapat mencocokkan proposal EO.
+                        </p>
+                        <Link
+                            href="/company/recommendations"
+                            class="mt-3 inline-flex items-center gap-2 rounded-lg bg-sm-red px-4 py-2 text-[11px] font-semibold text-white transition-colors hover:bg-sm-red-dark"
+                        >
+                            Buka Rekomendasi
+                        </Link>
+                    </div>
+
+                    <div v-else class="mt-4 grid gap-4 md:grid-cols-3">
                         <article
-                            v-for="event in companyRecommendations"
-                            :key="event.title"
+                            v-for="event in dashboardRecommendations"
+                            :key="event.proposal_id"
                             class="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
                         >
                             <!-- Area gambar/cover event -->
@@ -636,13 +699,12 @@ const matchBadgeTint = (match: number) =>
                                     {{ event.description }}
                                 </p>
 
-                                <button
-                                    type="button"
-                                    class="mt-4 w-full rounded-md bg-sm-navy py-2.5 text-xs font-semibold text-white transition-colors hover:bg-sm-card"
-                                    @click.prevent
+                                <Link
+                                    :href="event.href"
+                                    class="mt-4 w-full rounded-md bg-sm-navy py-2.5 text-center text-xs font-semibold text-white transition-colors hover:bg-sm-card"
                                 >
                                     Lihat Sekarang
-                                </button>
+                                </Link>
                             </div>
                         </article>
                     </div>

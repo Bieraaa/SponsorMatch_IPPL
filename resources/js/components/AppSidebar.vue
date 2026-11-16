@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import {
+    Building2,
     CreditCard,
     FileText,
     Handshake,
@@ -8,6 +9,7 @@ import {
     History,
     LayoutGrid,
     Megaphone,
+    Newspaper,
     Settings,
     Sparkles,
 } from '@lucide/vue';
@@ -21,7 +23,11 @@ import {
     SidebarHeader,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as campaignsIndex } from '@/routes/company/campaigns';
+import { edit as companyProfileEdit } from '@/routes/company/profile';
+import { index as companyRecommendationsIndex } from '@/routes/company/recommendations';
 import { index as proposalsIndex } from '@/routes/proposals';
+import { index as recommendationsIndex } from '@/routes/recommendations';
 import { index as sponsorProposalsIndex } from '@/routes/sponsor/proposals';
 import { edit } from '@/routes/profile';
 import type { NavItem } from '@/types';
@@ -50,6 +56,10 @@ const isSponsor = computed(() => page.props.auth.user?.role === 'sponsor');
  *  - EO      → "Proposal Saya" (proposal yang ia buat)
  *  - Sponsor → "Proposal Masuk" (proposal yang dikirim EO kepadanya)
  * Posisi & gaya menu tetap sama seperti desain Figma.
+ *
+ * Perusahaan juga mendapat menu "Campaign Saya" dan "Profil Perusahaan".
+ * Campaign opsional; profil perusahaan wajib agar bisa muncul di
+ * rekomendasi sponsor EO.
  */
 const proposalNavItem = computed<NavItem>(() =>
     isSponsor.value
@@ -57,15 +67,47 @@ const proposalNavItem = computed<NavItem>(() =>
         : { title: 'Proposal Saya', href: proposalsIndex(), icon: FileText },
 );
 
-const mainNavItems = computed<NavItem[]>(() => [
-    { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
-    { title: 'Rekomendasi Sponsor', href: '#', icon: Sparkles },
-    proposalNavItem.value,
-    { title: 'Penawaran', href: '#', icon: Handshake },
-    { title: 'Postingan', href: '#', icon: Megaphone },
-    { title: 'Riwayat Kolaborasi', href: '#', icon: History },
-    { title: 'Subscription', href: '#', icon: CreditCard },
-]);
+const mainNavItems = computed<NavItem[]>(() => {
+    if (isSponsor.value) {
+        return [
+            { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
+            {
+                title: 'Campaign Saya',
+                href: campaignsIndex(),
+                icon: Megaphone,
+            },
+            {
+                title: 'Profil Perusahaan',
+                href: companyProfileEdit(),
+                icon: Building2,
+            },
+            {
+                title: 'Rekomendasi Event',
+                href: companyRecommendationsIndex(),
+                icon: Sparkles,
+            },
+            proposalNavItem.value,
+            { title: 'Penawaran', href: '#', icon: Handshake },
+            { title: 'Postingan', href: '#', icon: Newspaper },
+            { title: 'Riwayat Kolaborasi', href: '#', icon: History },
+            { title: 'Subscription', href: '#', icon: CreditCard },
+        ];
+    }
+
+    return [
+        { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
+        {
+            title: 'Rekomendasi Sponsor',
+            href: recommendationsIndex(),
+            icon: Sparkles,
+        },
+        proposalNavItem.value,
+        { title: 'Penawaran', href: '#', icon: Handshake },
+        { title: 'Postingan', href: '#', icon: Megaphone },
+        { title: 'Riwayat Kolaborasi', href: '#', icon: History },
+        { title: 'Subscription', href: '#', icon: CreditCard },
+    ];
+});
 
 const utilityNavItems: NavItem[] = [
     { title: 'Pengaturan', href: edit(), icon: Settings },
