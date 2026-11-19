@@ -59,7 +59,7 @@ export type CompanyCampaign = {
     estimated_participant: number | null;
     period_start: string | null;
     period_end: string | null;
-    status: 'draft' | 'active' | 'close' | string;
+    status: 'draft' | 'active' | 'close';
     is_active: boolean;
     proposal_count: number | null;
 };

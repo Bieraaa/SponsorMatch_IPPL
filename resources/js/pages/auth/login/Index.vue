@@ -38,14 +38,17 @@ const remember = ref(false);
                 alt="SponsorMatch — Kolaborasi untuk Event Berdampak"
                 class="h-full w-full object-cover object-top"
             />
-        </div>``
+        </div>
+        ``
 
         <!--
             Panel kanan: navy, form di tengah. Konten dibungkus max-w 712px
             dan dipusatkan; padding vertikal memakai clamp() agar menyusut
             di layar pendek.
         -->
-        <div class="flex flex-1 items-center justify-center overflow-y-auto bg-sm-navy px-6 lg:px-16">
+        <div
+            class="flex flex-1 items-center justify-center overflow-y-auto bg-sm-navy px-6 lg:px-16"
+        >
             <div class="w-full max-w-178 py-[clamp(1.5rem,4vh,4rem)]">
                 <div
                     v-if="status"
@@ -55,13 +58,18 @@ const remember = ref(false);
                 </div>
 
                 <!-- H1: "Selamat Datang" putih + "Kembali" merah -->
-                <h1 class="text-[clamp(1.5rem,3.2vh,2.5rem)] font-semibold leading-tight text-white">
+                <h1
+                    class="text-[clamp(1.5rem,3.2vh,2.5rem)] leading-tight font-semibold text-white"
+                >
                     Selamat Datang <span class="text-sm-red">Kembali</span>
                 </h1>
 
                 <!-- Subteks -->
-                <p class="mt-[clamp(0.5rem,1.4vh,1rem)] text-[clamp(0.95rem,1.7vh,1.125rem)] leading-snug text-white">
-                    Masuk ke akun SponsorMatch untuk kembali melanjutkan perjalanan kolaborasi kamu
+                <p
+                    class="mt-[clamp(0.5rem,1.4vh,1rem)] text-[clamp(0.95rem,1.7vh,1.125rem)] leading-snug text-white"
+                >
+                    Masuk ke akun SponsorMatch untuk kembali melanjutkan
+                    perjalanan kolaborasi kamu
                 </p>
 
                 <Form
@@ -74,7 +82,11 @@ const remember = ref(false);
                     <div
                         class="flex h-[clamp(3.25rem,6.6vh,4.3125rem)] items-center gap-4 rounded-xl border-2 border-sm-red-dark bg-white px-5"
                     >
-                        <img src="/assets/icon_email.png" alt="" class="h-[38%] w-auto shrink-0" />
+                        <img
+                            src="/assets/icon_email.png"
+                            alt=""
+                            class="h-[38%] w-auto shrink-0"
+                        />
                         <input
                             id="email"
                             type="text"
@@ -93,7 +105,11 @@ const remember = ref(false);
                     <div
                         class="mt-[clamp(0.75rem,1.8vh,1.5rem)] flex h-[clamp(3.25rem,6.6vh,4.3125rem)] items-center gap-4 rounded-xl border-2 border-sm-red-dark bg-white px-5"
                     >
-                        <img src="/assets/icon_password.png" alt="" class="h-[42%] w-auto shrink-0" />
+                        <img
+                            src="/assets/icon_password.png"
+                            alt=""
+                            class="h-[42%] w-auto shrink-0"
+                        />
                         <input
                             id="password"
                             :type="showPassword ? 'text' : 'password'"
@@ -110,15 +126,23 @@ const remember = ref(false);
                             :tabindex="-1"
                             @click="showPassword = !showPassword"
                         >
-                            <Eye v-if="!showPassword" class="h-[1.4em] w-[1.4em]" />
+                            <Eye
+                                v-if="!showPassword"
+                                class="h-[1.4em] w-[1.4em]"
+                            />
                             <EyeOff v-else class="h-[1.4em] w-[1.4em]" />
                         </button>
                     </div>
                     <InputError :message="errors.password" class="mt-2" />
 
                     <!-- Baris: checkbox "Ingat Saya" (kiri) + "Lupa Password?" (kanan) -->
-                    <div class="mt-[clamp(0.9rem,2.2vh,2rem)] flex items-center justify-between">
-                        <label for="remember" class="flex cursor-pointer items-center gap-3">
+                    <div
+                        class="mt-[clamp(0.9rem,2.2vh,2rem)] flex items-center justify-between"
+                    >
+                        <label
+                            for="remember"
+                            class="flex cursor-pointer items-center gap-3"
+                        >
                             <!--
                                 Checkbox kustom "Ingat Saya".
                                 - `appearance-none` menghapus kotak bawaan browser.
@@ -128,7 +152,9 @@ const remember = ref(false);
                                 `peer-checked:` / `checked:` milik Tailwind sehingga
                                 centang selalu tampil saat kotak diklik.
                             -->
-                            <span class="relative inline-flex h-[clamp(1.1rem,2.1vh,1.5rem)] w-[clamp(1.1rem,2.1vh,1.5rem)] shrink-0">
+                            <span
+                                class="relative inline-flex h-[clamp(1.1rem,2.1vh,1.5rem)] w-[clamp(1.1rem,2.1vh,1.5rem)] shrink-0"
+                            >
                                 <input
                                     id="remember"
                                     name="remember"
@@ -150,7 +176,10 @@ const remember = ref(false);
                                     <polyline points="20 6 9 17 4 12" />
                                 </svg>
                             </span>
-                            <span class="text-[clamp(0.95rem,1.7vh,1.125rem)] text-white">Ingat Saya</span>
+                            <span
+                                class="text-[clamp(0.95rem,1.7vh,1.125rem)] text-white"
+                                >Ingat Saya</span
+                            >
                         </label>
                         <TextLink
                             v-if="canResetPassword"
@@ -175,9 +204,14 @@ const remember = ref(false);
                     </button>
 
                     <!-- Pemisah "Atau" -->
-                    <div class="mt-[clamp(1rem,2.6vh,2.5rem)] flex items-center gap-4">
+                    <div
+                        class="mt-[clamp(1rem,2.6vh,2.5rem)] flex items-center gap-4"
+                    >
                         <span class="h-px flex-1 bg-white/25"></span>
-                        <span class="text-[clamp(0.9rem,1.6vh,1.125rem)] text-white">Atau</span>
+                        <span
+                            class="text-[clamp(0.9rem,1.6vh,1.125rem)] text-white"
+                            >Atau</span
+                        >
                         <span class="h-px flex-1 bg-white/25"></span>
                     </div>
 
@@ -191,14 +225,24 @@ const remember = ref(false);
                         :href="googleRedirect.url()"
                         class="mt-[clamp(1rem,2.6vh,2.5rem)] flex h-[clamp(3.25rem,6.6vh,4.3125rem)] w-full items-center justify-center gap-5 rounded-xl border-2 border-sm-red-dark bg-white text-[clamp(0.95rem,1.8vh,1.25rem)] font-medium text-sm-card transition-colors hover:bg-gray-50"
                     >
-                        <img src="/assets/icon_google.png" alt="" class="h-[80%] w-auto" />
+                        <img
+                            src="/assets/icon_google.png"
+                            alt=""
+                            class="h-[80%] w-auto"
+                        />
                         Lanjutkan dengan Google
                     </a>
 
                     <!-- Footer: daftar -->
-                    <p class="mt-[clamp(1rem,2.4vh,2.5rem)] text-center text-[clamp(0.95rem,1.7vh,1.125rem)] text-white">
+                    <p
+                        class="mt-[clamp(1rem,2.4vh,2.5rem)] text-center text-[clamp(0.95rem,1.7vh,1.125rem)] text-white"
+                    >
                         Belum punya akun?
-                        <TextLink :href="register()" class="font-semibold text-sm-red hover:underline" :tabindex="6">
+                        <TextLink
+                            :href="register()"
+                            class="font-semibold text-sm-red hover:underline"
+                            :tabindex="6"
+                        >
                             Daftar Sekarang
                         </TextLink>
                     </p>
@@ -207,4 +251,3 @@ const remember = ref(false);
         </div>
     </div>
 </template>
-

@@ -68,9 +68,12 @@ function go(page: number): void {
     >
         <p class="text-xs text-sm-card/70">
             <template v-if="total > 0">
-                Menampilkan {{ from ?? 0 }}–{{ to ?? 0 }} dari {{ total }} {{ entityLabel }}
+                Menampilkan {{ from ?? 0 }}–{{ to ?? 0 }} dari {{ total }}
+                {{ entityLabel }}
             </template>
-            <template v-else>Belum ada {{ entityLabel }} untuk ditampilkan</template>
+            <template v-else
+                >Belum ada {{ entityLabel }} untuk ditampilkan</template
+            >
         </p>
 
         <div class="flex items-center gap-1.5">

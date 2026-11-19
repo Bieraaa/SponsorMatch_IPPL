@@ -63,7 +63,7 @@ const { el: sectionEl, revealed } = useReveal(0.25);
     <section
         id="langganan"
         ref="sectionEl"
-        class="flex min-h-svh snap-start items-center scroll-mt-[68px] bg-sm-navy font-jakarta text-white"
+        class="flex min-h-svh snap-start scroll-mt-[68px] items-center bg-sm-navy font-jakarta text-white"
     >
         <div class="mx-auto w-full max-w-[1000px] px-5 py-16 lg:py-20">
             <!--
@@ -72,17 +72,28 @@ const { el: sectionEl, revealed } = useReveal(0.25);
             -->
             <div
                 class="mx-auto max-w-[940px] text-center transition-all duration-700 ease-out"
-                :class="revealed ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'"
+                :class="
+                    revealed
+                        ? 'translate-y-0 opacity-100'
+                        : 'translate-y-8 opacity-0'
+                "
             >
-                <h2 class="font-poppins text-4xl font-bold leading-tight lg:text-5xl">
-                    Tingkatkan Peluang <span class="text-sm-red">Kerja Sama Anda</span>
+                <h2
+                    class="font-poppins text-4xl leading-tight font-bold lg:text-5xl"
+                >
+                    Tingkatkan Peluang
+                    <span class="text-sm-red">Kerja Sama Anda</span>
                 </h2>
                 <!-- max-w-[670px] membuat teks patah menjadi 2 baris seperti desain -->
-                <p class="mx-auto mt-5 max-w-[670px] text-base leading-[35px] text-white/90">
-                    Pilih premium sesuai dengan peran anda dan dapatkan akses fitur lengkap untuk hasil yang lebih
-                    maksimal
+                <p
+                    class="mx-auto mt-5 max-w-[670px] text-base leading-[35px] text-white/90"
+                >
+                    Pilih premium sesuai dengan peran anda dan dapatkan akses
+                    fitur lengkap untuk hasil yang lebih maksimal
                 </p>
-                <p class="mt-9 text-base font-semibold">Coba Berlangganan Selama 1 Bulan:</p>
+                <p class="mt-9 text-base font-semibold">
+                    Coba Berlangganan Selama 1 Bulan:
+                </p>
             </div>
 
             <!--
@@ -91,31 +102,53 @@ const { el: sectionEl, revealed } = useReveal(0.25);
             -->
             <!-- lg:flex-row (bukan md): di layar 768–1023px dua kartu tak muat (baris
                  harga tak bisa menyusut) sehingga kartu menumpuk dulu, berdampingan di ≥1024px -->
-            <div class="mt-10 flex flex-col items-center gap-8 lg:flex-row lg:justify-center lg:gap-[120px]">
+            <div
+                class="mt-10 flex flex-col items-center gap-8 lg:flex-row lg:justify-center lg:gap-[120px]"
+            >
                 <div
                     v-for="(plan, index) in plans"
                     :key="plan.name"
                     class="w-full max-w-[431px] rounded-3xl border border-sm-amber shadow-[0_4px_12px_rgba(0,0,0,0.3)] transition-all duration-500 ease-out"
-                    :class="revealed ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'"
-                    :style="{ background: plan.gradient, transitionDelay: `${150 + index * 120}ms` }"
+                    :class="
+                        revealed
+                            ? 'translate-y-0 opacity-100'
+                            : 'translate-y-6 opacity-0'
+                    "
+                    :style="{
+                        background: plan.gradient,
+                        transitionDelay: `${150 + index * 120}ms`,
+                    }"
                 >
                     <!-- Nama paket + target pengguna -->
                     <div class="px-6 pt-9">
-                        <h3 class="font-poppins text-2xl font-bold">{{ plan.name }}</h3>
-                        <p class="mt-2 text-base text-white/90">{{ plan.audience }}</p>
+                        <h3 class="font-poppins text-2xl font-bold">
+                            {{ plan.name }}
+                        </h3>
+                        <p class="mt-2 text-base text-white/90">
+                            {{ plan.audience }}
+                        </p>
                     </div>
 
                     <!-- Divider 1 (2px, inset ~20px seperti di Figma) -->
-                    <div class="mx-5 mt-[22px] h-0.5" :class="plan.dividerClass"></div>
+                    <div
+                        class="mx-5 mt-[22px] h-0.5"
+                        :class="plan.dividerClass"
+                    ></div>
 
                     <!--
                         Daftar manfaat: lingkaran peach Ø36 berisi centang
                         (warna centang #161E2F = "knockout" sesuai desain), teks 18px.
                         Jarak antar baris 18px sehingga jarak antar-ikon = 54px (Figma).
                     -->
-                    <ul class="mt-[27px] space-y-[18px] pl-[19px] pr-5">
-                        <li v-for="benefit in plan.benefits" :key="benefit" class="flex items-center gap-[13px]">
-                            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-sm-peach">
+                    <ul class="mt-[27px] space-y-[18px] pr-5 pl-[19px]">
+                        <li
+                            v-for="benefit in plan.benefits"
+                            :key="benefit"
+                            class="flex items-center gap-[13px]"
+                        >
+                            <span
+                                class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-sm-peach"
+                            >
                                 <svg
                                     viewBox="0 0 24 24"
                                     class="h-4 w-4"
@@ -129,22 +162,34 @@ const { el: sectionEl, revealed } = useReveal(0.25);
                                     <path d="M5 13l4 4L19 7" />
                                 </svg>
                             </span>
-                            <span class="text-lg font-medium">{{ benefit }}</span>
+                            <span class="text-lg font-medium">{{
+                                benefit
+                            }}</span>
                         </li>
                     </ul>
 
                     <!-- Divider 2 sebelum blok harga -->
-                    <div class="mx-5 mt-[38px] h-0.5" :class="plan.dividerClass"></div>
+                    <div
+                        class="mx-5 mt-[38px] h-0.5"
+                        :class="plan.dividerClass"
+                    ></div>
 
                     <!--
                         Blok harga + tombol. "Rp.199.000" 24px bold, "/Bulan" 16px regular
                         menempel di belakangnya (baseline sejajar) seperti di Figma.
                     -->
-                    <div class="flex items-center justify-between gap-4 px-6 pt-7 pb-7">
+                    <div
+                        class="flex items-center justify-between gap-4 px-6 pt-7 pb-7"
+                    >
                         <div>
                             <p class="text-sm text-white/90">Mulai dari</p>
-                            <p class="mt-1 font-poppins text-2xl font-bold leading-none">
-                                Rp.199.000<span class="ml-0.5 text-base font-normal">/Bulan</span>
+                            <p
+                                class="mt-1 font-poppins text-2xl leading-none font-bold"
+                            >
+                                Rp.199.000<span
+                                    class="ml-0.5 text-base font-normal"
+                                    >/Bulan</span
+                                >
                             </p>
                         </div>
                         <Link

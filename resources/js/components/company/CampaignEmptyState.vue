@@ -52,7 +52,7 @@ const emit = defineEmits<{
         <button
             v-if="owner"
             type="button"
-            class="mt-5 inline-flex items-center gap-2 rounded-lg bg-sm-red px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-sm-red-dark"
+            class="mt-5 inline-flex h-10 items-center gap-2 rounded-lg bg-sm-red px-4 text-xs font-semibold text-white transition-colors hover:bg-sm-red-dark"
             @click="emit('create')"
         >
             <Megaphone class="h-4 w-4" />

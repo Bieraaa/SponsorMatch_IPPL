@@ -62,16 +62,14 @@ const chips = [
             - pt-24 → jarak atas mengompensasi navbar sticky (68px) + napas
         -->
         <div
-            class="mx-auto grid w-full max-w-[1800px] grid-cols-1 items-center gap-12 px-5 pb-12 pt-24 sm:px-8 md:gap-14 lg:grid-cols-[0.85fr_1.15fr] lg:gap-8 lg:px-10 lg:py-20 xl:gap-12 xl:px-14 2xl:px-16"
+            class="mx-auto grid w-full max-w-[1800px] grid-cols-1 items-center gap-12 px-5 pt-24 pb-12 sm:px-8 md:gap-14 lg:grid-cols-[0.85fr_1.15fr] lg:gap-8 lg:px-10 lg:py-20 xl:gap-12 xl:px-14 2xl:px-16"
         >
             <!--
                 KOLOM KIRI — Konten teks.
                 z-20 supaya teks selalu di atas glow/gambar kalau tumpang tindih.
                 items-start → semua anak rata kiri.
             -->
-            <div
-                class="relative z-20 flex flex-col items-start lg:py-8"
-            >
+            <div class="relative z-20 flex flex-col items-start lg:py-8">
                 <!--
                     Judul utama: "Sponsor" merah + "Match" putih (span terpisah).
                     Ukuran naik per breakpoint: text-5xl → sm:6xl → md:7xl →
@@ -79,7 +77,7 @@ const chips = [
                     clamp() dipakai agar teks tidak pecah di rentang layar tengah.
                 -->
                 <h1
-                    class="font-poppins text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl lg:text-[clamp(3.5rem,5.2vw,5.5rem)] xl:text-[88px]"
+                    class="font-poppins text-5xl leading-[1.05] font-bold tracking-tight sm:text-6xl md:text-7xl lg:text-[clamp(3.5rem,5.2vw,5.5rem)] xl:text-[88px]"
                 >
                     <span class="text-sm-red">Sponsor</span>Match
                 </h1>
@@ -89,7 +87,7 @@ const chips = [
                     panjang. "Sponsor" di sini amber (berbeda dari judul yang merah).
                 -->
                 <p
-                    class="mt-6 max-w-xl font-poppins text-2xl font-semibold leading-snug sm:text-3xl lg:mt-8 lg:text-[clamp(1.75rem,2.4vw,2rem)]"
+                    class="mt-6 max-w-xl font-poppins text-2xl leading-snug font-semibold sm:text-3xl lg:mt-8 lg:text-[clamp(1.75rem,2.4vw,2rem)]"
                 >
                     Sudah Punya Acara, Tapi Masih Kesulitan Cari
                     <span class="text-sm-amber">Sponsor</span>?
@@ -103,9 +101,9 @@ const chips = [
                 <p
                     class="mt-5 max-w-lg font-poppins text-sm leading-7 text-white/80 sm:text-base lg:mt-6 lg:text-lg lg:leading-8"
                 >
-                    SponsorMatch membantu Anda menemukan perusahaan yang
-                    relevan melalui pencocokan berbasis AI, sehingga peluang
-                    kerja sama lebih tepat sasaran.
+                    SponsorMatch membantu Anda menemukan perusahaan yang relevan
+                    melalui pencocokan berbasis AI, sehingga peluang kerja sama
+                    lebih tepat sasaran.
                 </p>
 
                 <!--
@@ -135,7 +133,7 @@ const chips = [
                 lg:ml-auto lg:mr-0 → di layar lebar kolom ini menempel kanan.
             -->
             <div
-                class="relative mx-auto w-full min-w-0 max-w-[10000px] self-center lg:ml-auto lg:mr-0"
+                class="relative mx-auto w-full max-w-[10000px] min-w-0 self-center lg:mr-0 lg:ml-auto"
             >
                 <!--
                     GLOW peach di BELAKANG ilustrasi:
@@ -148,7 +146,7 @@ const chips = [
                     - z-0 → paling bawah; pointer-events-none → tidak menghalangi klik
                 -->
                 <div
-                    class="pointer-events-none absolute left-[6%] top-[4%] z-0 aspect-[867/849] w-[88%] rounded-full bg-[radial-gradient(circle_at_45%_35%,#FFA586_0%,#242F49_95%)]"
+                    class="pointer-events-none absolute top-[4%] left-[6%] z-0 aspect-[867/849] w-[88%] rounded-full bg-[radial-gradient(circle_at_45%_35%,#FFA586_0%,#242F49_95%)]"
                     aria-hidden="true"
                 />
 
@@ -202,12 +200,12 @@ const chips = [
                     <div class="min-w-0 font-poppins leading-tight">
                         <!-- whitespace-nowrap → judul tidak boleh pindah baris -->
                         <p
-                            class="whitespace-nowrap text-[9px] font-semibold text-sm-navy lg:text-[10px]"
+                            class="text-[9px] font-semibold whitespace-nowrap text-sm-navy lg:text-[10px]"
                         >
                             {{ chip.title }}
                         </p>
                         <p
-                            class="mt-0.5 whitespace-nowrap text-[7px] text-sm-navy/65 lg:text-[8px]"
+                            class="mt-0.5 text-[7px] whitespace-nowrap text-sm-navy/65 lg:text-[8px]"
                         >
                             {{ chip.note }}
                         </p>

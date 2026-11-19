@@ -2,7 +2,11 @@
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ArrowLeft } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import {
+    InputOTP,
+    InputOTPGroup,
+    InputOTPSlot,
+} from '@/components/ui/input-otp';
 import { Spinner } from '@/components/ui/spinner';
 
 /**
@@ -190,7 +194,9 @@ const errorMessage = computed(() => props.error ?? form.errors.code ?? null);
 <template>
     <Head title="Verifikasi Kode" />
 
-    <div class="flex min-h-screen flex-col items-center justify-center bg-sm-navy px-4 py-8">
+    <div
+        class="flex min-h-screen flex-col items-center justify-center bg-sm-navy px-4 py-8"
+    >
         <!-- Kartu putih 724 x 764px (sesuai Figma) -->
         <div
             class="w-full max-w-181 rounded-[20px] bg-white px-6 py-8 sm:px-10 lg:min-h-191 lg:px-15 lg:pt-5.75"
@@ -206,7 +212,7 @@ const errorMessage = computed(() => props.error ?? form.errors.code ?? null);
 
             <!-- Judul -->
             <h1
-                class="mt-[28px] text-center text-[28px] font-bold leading-[1.15] text-sm-card sm:text-[40px] lg:mt-[36px] lg:leading-[40px]"
+                class="mt-[28px] text-center text-[28px] leading-[1.15] font-bold text-sm-card sm:text-[40px] lg:mt-[36px] lg:leading-[40px]"
             >
                 Verifikasi Kode
             </h1>
@@ -247,8 +253,8 @@ const errorMessage = computed(() => props.error ?? form.errors.code ?? null);
                 class="mt-5 rounded-xl border-2 border-sm-amber bg-[#FFF7ED] px-4 py-3 text-center text-sm font-medium text-[#7C4A03]"
                 role="alert"
             >
-                Kode OTP sudah dibuat, tetapi email gagal dikirim. Coba
-                kirim ulang atau hubungi admin.
+                Kode OTP sudah dibuat, tetapi email gagal dikirim. Coba kirim
+                ulang atau hubungi admin.
             </p>
 
             <!--
@@ -272,7 +278,7 @@ const errorMessage = computed(() => props.error ?? form.errors.code ?? null);
                             v-for="index in 6"
                             :key="index"
                             :index="index - 1"
-                            class="h-[56px] w-full !rounded-[12px] border border-[#384358] bg-white text-[26px] font-semibold leading-none text-sm-card shadow-none data-[active=true]:border-sm-red first:!rounded-[12px] last:!rounded-[12px] lg:h-[80px] lg:text-[38px] dark:bg-white"
+                            class="h-[56px] w-full !rounded-[12px] border border-[#384358] bg-white text-[26px] leading-none font-semibold text-sm-card shadow-none first:!rounded-[12px] last:!rounded-[12px] data-[active=true]:border-sm-red lg:h-[80px] lg:text-[38px] dark:bg-white"
                         />
                     </InputOTPGroup>
                 </InputOTP>
@@ -299,7 +305,9 @@ const errorMessage = computed(() => props.error ?? form.errors.code ?? null);
             </button>
 
             <!-- Kirim ulang -->
-            <p class="mt-[42px] text-left text-[15px] text-sm-card lg:pl-[7px] lg:text-[18px]">
+            <p
+                class="mt-[42px] text-left text-[15px] text-sm-card lg:pl-[7px] lg:text-[18px]"
+            >
                 Belum mendapatkan kode?
                 <button
                     v-if="resendSeconds > 0"

@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { useReveal } from '@/composables/useReveal';
 
 /**
@@ -54,7 +58,7 @@ const { el: sectionEl, revealed } = useReveal(0.25);
     <section
         id="faq"
         ref="sectionEl"
-        class="flex min-h-svh snap-start items-center scroll-mt-[68px] bg-sm-navy font-jakarta text-white"
+        class="flex min-h-svh snap-start scroll-mt-[68px] items-center bg-sm-navy font-jakarta text-white"
     >
         <!-- px-11 (44px) di layar besar = margin Figma x44–x1394 (konten 1350px) -->
         <div class="mx-auto w-full max-w-[1440px] px-5 py-14 lg:px-11 lg:py-16">
@@ -65,24 +69,35 @@ const { el: sectionEl, revealed } = useReveal(0.25);
             -->
             <div
                 class="mx-auto max-w-3xl text-center transition-all duration-700 ease-out"
-                :class="revealed ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'"
+                :class="
+                    revealed
+                        ? 'translate-y-0 opacity-100'
+                        : 'translate-y-8 opacity-0'
+                "
             >
                 <span
-                    class="inline-flex rounded-full bg-sm-red px-11 py-1.5 font-poppins text-3xl font-bold leading-none"
+                    class="inline-flex rounded-full bg-sm-red px-11 py-1.5 font-poppins text-3xl leading-none font-bold"
                 >
                     FAQ
                 </span>
-                <h2 class="mt-4 font-poppins text-3xl font-bold leading-tight lg:text-[32px]">
-                    Pertanyaan Yang <span class="text-sm-red">Sering Diajukan</span>
+                <h2
+                    class="mt-4 font-poppins text-3xl leading-tight font-bold lg:text-[32px]"
+                >
+                    Pertanyaan Yang
+                    <span class="text-sm-red">Sering Diajukan</span>
                 </h2>
-                <p class="mt-2 text-base text-white/70">Temukan jawaban yang paling sering ditanyakan</p>
+                <p class="mt-2 text-base text-white/70">
+                    Temukan jawaban yang paling sering ditanyakan
+                </p>
             </div>
 
             <!--
                 Grid 2 kolom: kartu kontak (kiri, lebih lebar) + daftar pertanyaan (kanan).
                 fr mendekati rasio Figma 607 : 717.
             -->
-            <div class="mt-12 grid items-start gap-6 lg:grid-cols-[607fr_717fr]">
+            <div
+                class="mt-12 grid items-start gap-6 lg:grid-cols-[607fr_717fr]"
+            >
                 <!--
                     Kartu kontak (kiri) — ilustrasi hasil crop langsung dari PNG Figma
                     (gambar_faq_kontak.png, latar senada #242F49 jadi menyatu).
@@ -90,7 +105,11 @@ const { el: sectionEl, revealed } = useReveal(0.25);
                 -->
                 <div
                     class="rounded-xl bg-sm-card p-8 transition-all delay-150 duration-700 ease-out lg:p-10"
-                    :class="revealed ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'"
+                    :class="
+                        revealed
+                            ? 'translate-y-0 opacity-100'
+                            : 'translate-y-8 opacity-0'
+                    "
                 >
                     <img
                         src="/assets/gambar_faq_kontak.png"
@@ -98,13 +117,19 @@ const { el: sectionEl, revealed } = useReveal(0.25);
                         class="mx-auto mb-6 block w-full max-w-[500px]"
                     />
                     <!-- Split warna verbatim: "Masih ada" putih, sisanya merah (termasuk typo desain) -->
-                    <h3 class="font-poppins text-3xl font-bold leading-tight lg:text-4xl">
-                        Masih ada <span class="text-sm-red">pertanyaaan lagi ?</span>
+                    <h3
+                        class="font-poppins text-3xl leading-tight font-bold lg:text-4xl"
+                    >
+                        Masih ada
+                        <span class="text-sm-red">pertanyaaan lagi ?</span>
                     </h3>
                     <p class="mt-5 text-lg leading-8 text-white/80">
-                        Jika anda tidak menemukan jawaban yang anda cari, jangan ragu untuk menghubungi tim kami.
+                        Jika anda tidak menemukan jawaban yang anda cari, jangan
+                        ragu untuk menghubungi tim kami.
                     </p>
-                    <p class="mt-3 text-lg leading-8 text-white/80">Kami siap membantu anda.</p>
+                    <p class="mt-3 text-lg leading-8 text-white/80">
+                        Kami siap membantu anda.
+                    </p>
                     <a
                         href="mailto:hello@sponsormatch.id"
                         class="mx-auto mt-10 flex h-[54px] w-full max-w-[255px] items-center justify-center rounded-lg bg-sm-red font-poppins text-base font-semibold text-white transition-colors hover:bg-sm-red-dark"
@@ -124,7 +149,11 @@ const { el: sectionEl, revealed } = useReveal(0.25);
                         v-for="(faq, index) in faqs"
                         :key="faq.q"
                         class="overflow-hidden rounded-xl bg-sm-card transition-all duration-500 ease-out"
-                        :class="revealed ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'"
+                        :class="
+                            revealed
+                                ? 'translate-y-0 opacity-100'
+                                : 'translate-y-6 opacity-0'
+                        "
                         :style="{ transitionDelay: `${200 + index * 60}ms` }"
                     >
                         <CollapsibleTrigger
@@ -137,10 +166,14 @@ const { el: sectionEl, revealed } = useReveal(0.25);
                             >
                                 ?
                             </span>
-                            <span class="text-lg font-medium lg:text-xl">{{ faq.q }}</span>
+                            <span class="text-lg font-medium lg:text-xl">{{
+                                faq.q
+                            }}</span>
                         </CollapsibleTrigger>
                         <!-- Jawaban: indentasi sejajar dengan teks pertanyaan (4 + 50 + 16 = 70px) -->
-                        <CollapsibleContent class="pb-5 pr-4 pl-[70px] text-base leading-7 text-white/70">
+                        <CollapsibleContent
+                            class="pr-4 pb-5 pl-[70px] text-base leading-7 text-white/70"
+                        >
                             {{ faq.a }}
                         </CollapsibleContent>
                     </Collapsible>

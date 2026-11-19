@@ -54,7 +54,8 @@ class CompanyProfileController extends Controller
 
         $posts = Post::query()
             ->where('idUser', $companyUser->id)
-            ->whereNull('deleteAt')
+            ->visible()
+            ->with(['user.companyProfile'])
             ->orderByDesc('createdAt')
             ->limit(12)
             ->get()

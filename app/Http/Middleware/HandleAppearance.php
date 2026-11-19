@@ -16,7 +16,11 @@ class HandleAppearance
      */
     public function handle(Request $request, Closure $next): Response
     {
-        View::share('appearance', $request->cookie('appearance') ?? 'system');
+        // Desain SponsorMatch adalah tema terang. Cookie `appearance` tetap
+        // dipakai bila pengguna memilih tema lain di halaman Pengaturan,
+        // tetapi default-nya terang agar dropdown, dialog, dan halaman tidak
+        // bercampur terang/gelap di perangkat bermode gelap.
+        View::share('appearance', $request->cookie('appearance') ?? 'light');
 
         return $next($request);
     }

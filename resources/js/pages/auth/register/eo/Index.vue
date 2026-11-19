@@ -74,8 +74,9 @@ const readOnlyInputClass =
                 class="rounded-[14px] border border-[#384358] bg-white/5 px-4 py-3 text-sm leading-relaxed text-white/85"
             >
                 Melanjutkan pendaftaran dengan akun Google
-                <span class="font-semibold text-white">{{ google?.email }}</span>. Email sudah
-                terverifikasi, jadi kamu tidak perlu membuat password.
+                <span class="font-semibold text-white">{{ google?.email }}</span
+                >. Email sudah terverifikasi, jadi kamu tidak perlu membuat
+                password.
             </div>
 
             <RegisterField
@@ -135,20 +136,32 @@ const readOnlyInputClass =
             <!-- Password hanya untuk pendaftaran biasa. Pada mode Google, password
                  dibuat acak oleh server (lihat App\Actions\Fortify\CreateNewUser). -->
             <div v-if="!isGoogle" class="grid gap-2">
-                <Label for="password" class="text-base text-white">Password</Label>
-                <PasswordInput id="password" name="password" required :class="inputClass" />
+                <Label for="password" class="text-base text-white"
+                    >Password</Label
+                >
+                <PasswordInput
+                    id="password"
+                    name="password"
+                    required
+                    :class="inputClass"
+                />
                 <InputError :message="errors.password" class="text-[#FF8A96]" />
             </div>
 
             <div v-if="!isGoogle" class="grid gap-2">
-                <Label for="password_confirmation" class="text-base text-white">Konfirmasi Password</Label>
+                <Label for="password_confirmation" class="text-base text-white"
+                    >Konfirmasi Password</Label
+                >
                 <PasswordInput
                     id="password_confirmation"
                     name="password_confirmation"
                     required
                     :class="inputClass"
                 />
-                <InputError :message="errors.password_confirmation" class="text-[#FF8A96]" />
+                <InputError
+                    :message="errors.password_confirmation"
+                    class="text-[#FF8A96]"
+                />
             </div>
 
             <button
@@ -156,7 +169,10 @@ const readOnlyInputClass =
                 :disabled="processing"
                 class="mt-1 h-[58px] w-full cursor-pointer rounded-[14px] bg-sm-red font-semibold text-white transition-colors hover:bg-[#C41F31] disabled:opacity-60"
             >
-                <span v-if="processing" class="flex items-center justify-center gap-2">
+                <span
+                    v-if="processing"
+                    class="flex items-center justify-center gap-2"
+                >
                     <Spinner class="h-4 w-4" />
                     Mendaftar...
                 </span>

@@ -147,6 +147,27 @@ class PdfExtractionTest extends TestCase
         )->assertStatus(422)->assertJsonValidationErrors('file');
     }
 
+    public function test_default_proposal_pdf_limit_is_30_mb(): void
+    {
+        $this->assertSame(30720, (int) config('sponsormatch.pdf.max_kb'));
+
+        $eo = User::factory()->create();
+
+        $response = $this->actingAs($eo)->post(
+            route('proposals.ekstrak'),
+            ['file' => $this->fakePdfWithSize('proposal.pdf', 30721)],
+            ['Accept' => 'application/json'],
+        );
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('file');
+
+        $this->assertStringContainsString(
+            '30 MB',
+            (string) $response->json('errors.file.0'),
+        );
+    }
+
     public function test_campaign_extraction_returns_503_when_ai_is_unavailable(): void
     {
         config(['services.gemini.key' => null]);
@@ -200,6 +221,22 @@ class PdfExtractionTest extends TestCase
         $path = tempnam(sys_get_temp_dir(), 'pdf');
 
         file_put_contents($path, "%PDF-1.4\n% SponsorMatch test PDF\n".str_repeat('0', 512));
+
+        return new UploadedFile($path, $name, 'application/pdf', null, true);
+    }
+
+    /**
+     * PDF uji berukuran tertentu tanpa mengisi seluruh isi ke memori.
+     * Header PDF asli tetap ditulis agar lolos validasi mime.
+     */
+    private function fakePdfWithSize(string $name, int $kilobytes): UploadedFile
+    {
+        $path = tempnam(sys_get_temp_dir(), 'pdf');
+        $handle = fopen($path, 'w+');
+
+        fwrite($handle, "%PDF-1.4\n% SponsorMatch test PDF\n");
+        ftruncate($handle, $kilobytes * 1024);
+        fclose($handle);
 
         return new UploadedFile($path, $name, 'application/pdf', null, true);
     }

@@ -49,11 +49,16 @@ const rating = computed(() => Number(props.company.rating ?? 0).toFixed(1));
                     </div>
 
                     <div class="pb-1">
-                        <h1 class="text-xl font-semibold text-sm-navy sm:text-2xl">
+                        <h1
+                            class="text-xl font-semibold text-sm-navy sm:text-2xl"
+                        >
                             {{ company.name }}
                         </h1>
                         <p class="mt-1 text-xs text-sm-card/70">
-                            {{ company.industry || 'Bidang industri belum diisi' }}
+                            {{
+                                company.industry ||
+                                'Bidang industri belum diisi'
+                            }}
                         </p>
                     </div>
                 </div>
@@ -62,7 +67,9 @@ const rating = computed(() => Number(props.company.rating ?? 0).toFixed(1));
                     <span
                         class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700"
                     >
-                        <Star class="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                        <Star
+                            class="h-3.5 w-3.5 fill-amber-400 text-amber-400"
+                        />
                         {{ rating }}
                         <span class="font-normal text-amber-700/70">
                             ({{ company.review_count }} ulasan)

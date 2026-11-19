@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Penawaran sponsor terhadap proposal (tabel `offer`).
@@ -74,6 +75,26 @@ class Offer extends Model
      */
     public function fromUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'from_user_id', 'id') ->withTrashed() ;
+        return $this->belongsTo(User::class, 'from_user_id', 'id')->withTrashed();
+    }
+
+    /**
+     * Penawaran induk (null bila ini penawaran awal).
+     *
+     * @return BelongsTo<Offer, $this>
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_offer_id', 'idOffer');
+    }
+
+    /**
+     * Balasan/counter yang mengacu pada penawaran ini.
+     *
+     * @return HasMany<Offer, $this>
+     */
+    public function children(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_offer_id', 'idOffer');
     }
 }

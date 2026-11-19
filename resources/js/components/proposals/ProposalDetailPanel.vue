@@ -3,7 +3,12 @@ import { router } from '@inertiajs/vue3';
 import { useMediaQuery } from '@vueuse/core';
 import { computed, ref, watch } from 'vue';
 import ProposalDetailContent from '@/components/proposals/ProposalDetailContent.vue';
-import { dokumen, publish as publishRoute, send as sendForm, tindakLanjut } from '@/routes/proposals';
+import {
+    dokumen,
+    publish as publishRoute,
+    send as sendForm,
+    tindakLanjut,
+} from '@/routes/proposals';
 import type { ProposalDetail, ProposalStatusKey } from '@/types/proposal';
 
 /**
@@ -40,7 +45,7 @@ const budgetLabel = computed(() => {
     }
 
     const { budgetMin, budgetMax } = props.detail.offer;
-    const format = (value: number) => 'Rp' + value.toLocaleString('id-ID');
+    const format = (value: number) => 'Rp ' + value.toLocaleString('id-ID');
 
     return budgetMin === budgetMax
         ? format(budgetMin)
@@ -67,7 +72,11 @@ function download(): void {
 /** Terbitkan proposal draft menjadi siap dikirim. */
 function publish(): void {
     if (props.detail) {
-        router.post(publishRoute(props.detail.id), {}, { preserveScroll: true });
+        router.post(
+            publishRoute(props.detail.id),
+            {},
+            { preserveScroll: true },
+        );
     }
 }
 
@@ -90,7 +99,11 @@ function followUp(): void {
 <template>
     <template v-if="detail">
         <!-- Desktop: kolom kanan -->
-        <aside v-if="isDesktop" class="sticky top-4 self-start" aria-label="Detail proposal">
+        <aside
+            v-if="isDesktop"
+            class="sticky top-4 self-start"
+            aria-label="Detail proposal"
+        >
             <div
                 class="max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-sm"
             >
@@ -117,11 +130,16 @@ function followUp(): void {
             aria-modal="true"
             aria-label="Detail proposal"
         >
-            <div class="absolute inset-0 bg-sm-navy/60" @click="emit('close')"></div>
+            <div
+                class="absolute inset-0 bg-sm-navy/60"
+                @click="emit('close')"
+            ></div>
             <div
                 class="absolute inset-x-0 bottom-0 max-h-[88vh] overflow-y-auto rounded-t-2xl bg-white shadow-2xl"
             >
-                <div class="mx-auto mt-2 h-1 w-10 rounded-full bg-gray-200"></div>
+                <div
+                    class="mx-auto mt-2 h-1 w-10 rounded-full bg-gray-200"
+                ></div>
                 <ProposalDetailContent
                     :detail="detail"
                     :status-style="statusStyle"

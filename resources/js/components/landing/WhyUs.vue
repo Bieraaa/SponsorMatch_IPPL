@@ -58,7 +58,7 @@ const { el: sectionEl, revealed } = useReveal(0.25);
     <section
         id="tentang"
         ref="sectionEl"
-        class="flex min-h-svh snap-start items-center scroll-mt-[68px] bg-sm-navy font-jakarta text-white"
+        class="flex min-h-svh snap-start scroll-mt-[68px] items-center bg-sm-navy font-jakarta text-white"
     >
         <!--
             Kontainer isi: max-w-[1440px] = lebar maks desain.
@@ -66,7 +66,9 @@ const { el: sectionEl, revealed } = useReveal(0.25);
             Kolom gambar SHUT shrink-0 (lebarnya pas selebar gambar, tidak ikut melebar),
             kolom teks flex-1 (mengambil semua sisa ruang di sebelahnya).
         -->
-        <div class="mx-auto flex w-full max-w-[1440px] flex-col items-center gap-12 px-5 py-20 lg:flex-row lg:gap-16 lg:px-10 lg:py-28">
+        <div
+            class="mx-auto flex w-full max-w-[1440px] flex-col items-center gap-12 px-5 py-20 lg:flex-row lg:gap-16 lg:px-10 lg:py-28"
+        >
             <!--
                 KOLOM KIRI — Foto + dekorasi.
                 position:relative wajib: agar anak-anaknya (rectangle, tanda tanya)
@@ -76,7 +78,11 @@ const { el: sectionEl, revealed } = useReveal(0.25);
             -->
             <div
                 class="relative w-full max-w-[398px] shrink-0 transition-all duration-700 ease-out"
-                :class="revealed ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'"
+                :class="
+                    revealed
+                        ? 'translate-y-0 opacity-100'
+                        : 'translate-y-8 opacity-0'
+                "
             >
                 <!--
                     Rectangle gradien di BELAKANG foto (hasil ukur desain target):
@@ -89,7 +95,7 @@ const { el: sectionEl, revealed } = useReveal(0.25);
                     Anak pertama tanpa z → otomatis di bawah foto (z-10).
                 -->
                 <div
-                    class="absolute left-0 right-0 top-[3.5%] h-[96.5%] rounded-tl-[80px] rounded-tr-[80px] bg-[linear-gradient(180deg,#B51A2B_0%,#661C2D_33%,#161E2F_100%)]"
+                    class="absolute top-[3.5%] right-0 left-0 h-[96.5%] rounded-tl-[80px] rounded-tr-[80px] bg-[linear-gradient(180deg,#B51A2B_0%,#661C2D_33%,#161E2F_100%)]"
                     aria-hidden="true"
                 />
 
@@ -104,7 +110,7 @@ const { el: sectionEl, revealed } = useReveal(0.25);
                     src="/assets/vector_tanda_tanya.svg"
                     alt=""
                     aria-hidden="true"
-                    class="absolute left-[58%] top-[-2%] z-20 h-14 w-auto"
+                    class="absolute top-[-2%] left-[58%] z-20 h-14 w-auto"
                 />
 
                 <!--
@@ -133,13 +139,19 @@ const { el: sectionEl, revealed } = useReveal(0.25);
             -->
             <div
                 class="w-full min-w-0 flex-1 rounded-xl border-[0.5px] border-sm-amber bg-[linear-gradient(180deg,#384358_0%,#242F48_45%,#212B43_65%,#161E2F_100%)] p-6 transition-all delay-150 duration-700 ease-out sm:p-9 lg:p-12"
-                :class="revealed ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'"
+                :class="
+                    revealed
+                        ? 'translate-y-0 opacity-100'
+                        : 'translate-y-8 opacity-0'
+                "
             >
                 <!--
                     Judul seksi. Sesuai desain: HANYA kata "Sponsor" yang merah,
                     "Kenapa Harus" dan "Match?" tetap putih.
                 -->
-                <h2 class="font-poppins text-4xl font-bold leading-tight lg:text-5xl">
+                <h2
+                    class="font-poppins text-4xl leading-tight font-bold lg:text-5xl"
+                >
                     Kenapa Harus <span class="text-sm-red">Sponsor</span>Match?
                 </h2>
 
@@ -148,7 +160,10 @@ const { el: sectionEl, revealed } = useReveal(0.25);
                     dengan ujung grid kartu di bawahnya (lebar mengikuti kontainer).
                 -->
                 <p class="mt-5 text-base leading-7 text-white/80">
-                    Mencari sponsor tidak harus dimulai dari menghubungi perusahaan satu per satu. SponsorMatch membantu mempertemukan event dengan perusahaan yang memiliki potensi kerja sama yang relevan.
+                    Mencari sponsor tidak harus dimulai dari menghubungi
+                    perusahaan satu per satu. SponsorMatch membantu
+                    mempertemukan event dengan perusahaan yang memiliki potensi
+                    kerja sama yang relevan.
                 </p>
 
                 <!--
@@ -168,7 +183,11 @@ const { el: sectionEl, revealed } = useReveal(0.25);
                         v-for="(feature, index) in features"
                         :key="feature.title"
                         class="rounded-xl border-[0.5px] border-sm-amber bg-sm-card p-6 transition-all duration-500 ease-out"
-                        :class="revealed ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'"
+                        :class="
+                            revealed
+                                ? 'translate-y-0 opacity-100'
+                                : 'translate-y-6 opacity-0'
+                        "
                         :style="{ transitionDelay: `${200 + index * 100}ms` }"
                     >
                         <!-- Baris1: logo (di lingkaran putih) + judul sejajar kanannya -->
@@ -178,16 +197,26 @@ const { el: sectionEl, revealed } = useReveal(0.25);
                                 shrink-0 → tidak gepeng kalau judul panjang,
                                 items-center justify-center → icon di tengah lingkaran.
                             -->
-                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white">
+                            <div
+                                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white"
+                            >
                                 <!-- Icon hitam/navy, ukuran24px di dalam lingkaran48px -->
-                                <img :src="`/assets/${feature.icon}`" alt="" class="h-6 w-6" />
+                                <img
+                                    :src="`/assets/${feature.icon}`"
+                                    alt=""
+                                    class="h-6 w-6"
+                                />
                             </div>
                             <!-- Judul kartu: Poppins18px tebal, sejajar vertikal dengan logo -->
-                            <h3 class="font-poppins text-lg font-semibold">{{ feature.title }}</h3>
+                            <h3 class="font-poppins text-lg font-semibold">
+                                {{ feature.title }}
+                            </h3>
                         </div>
 
                         <!-- Baris2: penjelasan di bawah baris logo+judul -->
-                        <p class="mt-3 text-sm leading-6 text-white/70">{{ feature.desc }}</p>
+                        <p class="mt-3 text-sm leading-6 text-white/70">
+                            {{ feature.desc }}
+                        </p>
                     </div>
                 </div>
             </div>

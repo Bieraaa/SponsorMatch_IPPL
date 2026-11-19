@@ -18,7 +18,7 @@ import WhyUs from '@/components/landing/WhyUs.vue';
         - scroll-pt-[68px]: kompensasi tinggi navbar sticky agar seksi tidak tertutup
     -->
     <div
-        class="h-svh snap-y snap-mandatory overflow-y-auto scroll-pt-[68px] scroll-smooth bg-sm-navy font-jakarta text-white"
+        class="h-svh snap-y snap-mandatory scroll-pt-[68px] overflow-y-auto scroll-smooth bg-sm-navy font-jakarta text-white"
     >
         <Navbar />
         <main>

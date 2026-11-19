@@ -65,7 +65,11 @@ const quickActions = [
         href: '/company/profile',
     },
     { label: 'Campaign Saya', icon: Megaphone, href: '/company/campaigns' },
-    { label: 'Proposal Masuk', icon: FileText, href: sponsorProposalsIndex().url },
+    {
+        label: 'Proposal Masuk',
+        icon: FileText,
+        href: sponsorProposalsIndex().url,
+    },
     { label: 'Dashboard', icon: UserCheck, href: '/dashboard' },
 ];
 
@@ -137,9 +141,9 @@ function submitInterest(item: ProposalRecommendationItem): void {
 <template>
     <Head title="Rekomendasi Event" />
 
-    <div class="min-h-full bg-white pb-10">
+    <div class="min-h-full bg-[#F7F8FA] pb-10">
         <div
-            class="mx-auto grid max-w-[1180px] items-start gap-6 px-4 py-6 xl:grid-cols-[minmax(0,1fr)_294px] xl:px-0"
+            class="mx-auto grid w-full max-w-[1180px] items-start gap-6 px-4 py-6 xl:grid-cols-[minmax(0,1fr)_294px] xl:px-0"
         >
             <div class="min-w-0">
                 <div ref="listTop" class="scroll-mt-24">
@@ -160,7 +164,7 @@ function submitInterest(item: ProposalRecommendationItem): void {
 
                         <button
                             type="button"
-                            class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-sm-navy transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 text-xs font-semibold text-sm-navy transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                             :disabled="loading || !profile.is_complete"
                             @click="refreshRecommendations"
                         >
@@ -321,7 +325,7 @@ function submitInterest(item: ProposalRecommendationItem): void {
                                 ? '/company/campaigns'
                                 : '/company/profile'
                         "
-                        class="mt-5 inline-flex items-center gap-2 rounded-lg bg-sm-red px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-sm-red-dark"
+                        class="mt-5 inline-flex h-10 items-center gap-2 rounded-lg bg-sm-red px-4 text-xs font-semibold text-white transition-colors hover:bg-sm-red-dark"
                     >
                         <component
                             :is="profile.is_complete ? Megaphone : Building2"
@@ -361,7 +365,7 @@ function submitInterest(item: ProposalRecommendationItem): void {
                 </section>
 
                 <section
-                    class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                    class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
                 >
                     <h2 class="text-sm font-semibold text-sm-navy">
                         Tips Rekomendasi

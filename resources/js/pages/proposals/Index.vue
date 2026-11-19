@@ -40,6 +40,10 @@ const props = defineProps<{
     statusCounts: ProposalStatusCounts;
     kategori: ProposalKategori[];
     filters: ProposalFilters;
+    pdfConfig: {
+        max_kb: number;
+        max_mb: number;
+    };
 }>();
 
 /** Dialog tambah proposal. */
@@ -53,7 +57,7 @@ onMounted(() => {
         window.history.replaceState(
             window.history.state,
             '',
-            window.location.pathname
+            window.location.pathname,
         );
     }
 });
@@ -80,7 +84,8 @@ function cleanParams(
 ): Record<string, string | number> {
     return Object.fromEntries(
         Object.entries(params).filter(
-            ([, value]) => value !== null && value !== undefined && value !== '',
+            ([, value]) =>
+                value !== null && value !== undefined && value !== '',
         ),
     ) as Record<string, string | number>;
 }
@@ -89,7 +94,8 @@ function cleanParams(
 const query = computed(() =>
     cleanParams({
         search: props.filters.search,
-        status: props.filters.status === 'all' ? undefined : props.filters.status,
+        status:
+            props.filters.status === 'all' ? undefined : props.filters.status,
         periode: props.filters.periode,
         per_page: props.filters.perPage,
         kategori: props.filters.kategori ?? undefined,
@@ -112,12 +118,16 @@ function select(id: number): void {
 
 /** Tutup panel detail tanpa menghapus filter yang aktif. */
 function closeDetail(): void {
-    router.get(proposalsIndex().url, { ...query.value }, {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-        only: ['selectedProposal'],
-    });
+    router.get(
+        proposalsIndex().url,
+        { ...query.value },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ['selectedProposal'],
+        },
+    );
 }
 
 /** Ganti periode grafik (7 / 30 / 90 hari). */
@@ -142,55 +152,35 @@ function changePeriode(periode: ProposalPeriod): void {
 <template>
     <Head title="Proposal Saya" />
 
-    <div class="min-h-full bg-sm-navy pb-10">
-        <div class="mx-auto max-w-[1180px] space-y-6 px-4 py-6 xl:px-0">
+    <div class="min-h-full bg-[#F7F8FA] pb-10">
+        <div class="mx-auto w-full max-w-[1180px] space-y-6 px-4 py-6 xl:px-0">
             <!-- ===================== Judul halaman ===================== -->
-            <header class="flex items-start justify-between gap-6">
+            <header>
                 <div class="min-w-0">
-                    <h1 class="text-2xl font-semibold text-white sm:text-[28px]">
+                    <h1
+                        class="text-2xl leading-tight font-semibold text-sm-navy lg:text-[30px]"
+                    >
                         Proposal Saya
                     </h1>
-                    <p class="mt-1.5 max-w-xl text-sm leading-relaxed text-white/70">
-                        Kelola, pantau, dan tindak lanjuti pengajuan sponsorship event kamu.
+                    <p
+                        class="mt-2 max-w-2xl text-sm leading-relaxed text-sm-card/70"
+                    >
+                        Kelola, pantau, dan tindak lanjuti pengajuan sponsorship
+                        event kamu.
                     </p>
                 </div>
-
-                <!-- Ilustrasi dekoratif (murni hiasan, disembunyikan dari screen reader) -->
-                <svg
-                    viewBox="0 0 190 120"
-                    class="hidden h-24 w-auto shrink-0 sm:block"
-                    aria-hidden="true"
-                    focusable="false"
-                >
-                    <rect
-                        x="40"
-                        y="22"
-                        width="92"
-                        height="66"
-                        rx="10"
-                        fill="#ffffff"
-                        opacity="0.07"
-                        transform="rotate(-7 86 55)"
-                    />
-                    <rect x="58" y="30" width="96" height="72" rx="10" fill="#ffffff" opacity="0.13" />
-                    <rect x="70" y="44" width="52" height="5" rx="2.5" fill="#ffffff" opacity="0.6" />
-                    <rect x="70" y="56" width="72" height="4" rx="2" fill="#ffffff" opacity="0.28" />
-                    <rect x="70" y="65" width="58" height="4" rx="2" fill="#ffffff" opacity="0.28" />
-                    <rect x="70" y="82" width="8" height="12" rx="2" fill="#FFA586" />
-                    <rect x="84" y="76" width="8" height="18" rx="2" fill="#F59E0B" />
-                    <rect x="98" y="70" width="8" height="24" rx="2" fill="#ffffff" opacity="0.7" />
-                    <path d="M132 12l40 14-25 11-5 14-10-16z" fill="#B51A2B" />
-                </svg>
             </header>
 
             <!-- Indikator loading partial reload -->
             <div
                 v-if="loading"
-                class="h-0.5 w-full overflow-hidden rounded-full bg-white/10"
+                class="h-0.5 w-full overflow-hidden rounded-full bg-gray-200"
                 role="status"
                 aria-label="Memuat data"
             >
-                <div class="h-full w-1/3 animate-pulse rounded-full bg-sm-red"></div>
+                <div
+                    class="h-full w-1/3 animate-pulse rounded-full bg-sm-red"
+                ></div>
             </div>
 
             <!-- ===================== 4 kartu statistik ===================== -->
@@ -227,6 +217,10 @@ function changePeriode(periode: ProposalPeriod): void {
             </div>
         </div>
 
-        <ProposalCreateDialog v-model:open="createOpen" :kategori="kategori" />
+        <ProposalCreateDialog
+            v-model:open="createOpen"
+            :kategori="kategori"
+            :pdf-max-kb="pdfConfig.max_kb"
+        />
     </div>
 </template>

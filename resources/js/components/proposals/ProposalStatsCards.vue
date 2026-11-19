@@ -63,7 +63,10 @@ function changeText(stat: ProposalStat): string {
 </script>
 
 <template>
-    <section aria-label="Statistik proposal" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <section
+        aria-label="Statistik proposal"
+        class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
+    >
         <article
             v-for="card in cards"
             :key="card.key"
@@ -74,7 +77,9 @@ function changeText(stat: ProposalStat): string {
                     <p class="truncate text-[13px] font-medium text-gray-500">
                         {{ card.label }}
                     </p>
-                    <p class="mt-1.5 text-[28px] font-semibold leading-none text-sm-navy">
+                    <p
+                        class="mt-1.5 text-[28px] leading-none font-semibold text-sm-navy"
+                    >
                         {{ card.value }}
                     </p>
                 </div>
@@ -82,7 +87,11 @@ function changeText(stat: ProposalStat): string {
                     class="flex size-10 shrink-0 items-center justify-center rounded-xl"
                     :class="card.iconClass"
                 >
-                    <component :is="card.icon" class="size-5" :stroke-width="2" />
+                    <component
+                        :is="card.icon"
+                        class="size-5"
+                        :stroke-width="2"
+                    />
                 </span>
             </div>
 
@@ -96,8 +105,14 @@ function changeText(stat: ProposalStat): string {
                           : 'text-sm-red'
                 "
             >
-                <TrendingUp v-if="card.change !== null && card.change > 0" class="size-3.5" />
-                <TrendingDown v-else-if="card.change !== null && card.change < 0" class="size-3.5" />
+                <TrendingUp
+                    v-if="card.change !== null && card.change > 0"
+                    class="size-3.5"
+                />
+                <TrendingDown
+                    v-else-if="card.change !== null && card.change < 0"
+                    class="size-3.5"
+                />
                 <span>{{ changeText(card) }}</span>
             </p>
         </article>

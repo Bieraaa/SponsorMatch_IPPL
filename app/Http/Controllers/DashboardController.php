@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Campaign;
 use App\Models\Offer;
+use App\Models\Post;
 use App\Models\Proposal;
 use App\Models\SponsorMatch;
 use App\Models\TrackingPipeline;
@@ -76,6 +77,7 @@ class DashboardController extends Controller
                     'has_campaigns' => $campaigns->isNotEmpty(),
                     'has_profile' => $user->companyProfile()->exists(),
                     'optional_message' => 'Campaign bersifat opsional. Perusahaan tetap dapat menerima proposal dari EO meski belum membuat campaign.',
+                    'latestPosts' => $this->latestPosts($user),
                 ],
             ]);
         }
@@ -126,8 +128,132 @@ class DashboardController extends Controller
                         'description' => $item['description'],
                     ])
                     ->values(),
+                'recommendations' => $this->eoRecommendationHighlights($user),
+                'latestPosts' => $this->latestPosts($user),
             ],
         ]);
+    }
+
+    /**
+     * Empat postingan terbaru milik pengguna untuk kartu dashboard.
+     *
+     * Hanya postingan yang belum dihapus. Dashboard menampilkan postingan
+     * milik sendiri agar tombol "Buat Postingan" langsung terasa relevan.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function latestPosts(User $user): array
+    {
+        return Post::query()
+            ->visible()
+            ->ownedBy($user)
+            ->with(['user.companyProfile'])
+            ->orderByDesc('createdAt')
+            ->orderByDesc('idPost')
+            ->limit(4)
+            ->get()
+            ->map(fn (Post $post) => CompanyPresenter::post($post))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Tiga rekomendasi sponsor teratas untuk dashboard EO.
+     *
+     * Sumbernya HANYA baris `matches` yang sudah benar-benar tersimpan
+     * (direction = eo_to_company) untuk proposal milik user. Dashboard tidak
+     * memicu analisis AI baru saat dibuka; bila belum ada hasil, daftar
+     * dikosongkan dan halaman menampilkan ajakan membuka Rekomendasi Sponsor.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function eoRecommendationHighlights(User $user): array
+    {
+        $proposalIds = Proposal::query()
+            ->where('idUser', $user->id)
+            ->whereNull('deleteAt')
+            ->select('idProposal');
+
+        $matches = SponsorMatch::query()
+            ->where('direction', SponsorMatch::DIRECTION_EO_TO_COMPANY)
+            ->whereIn('idProposal', $proposalIds)
+            ->orderByDesc('score')
+            ->orderBy('idMatches')
+            ->limit(3)
+            ->get();
+
+        if ($matches->isEmpty()) {
+            return [];
+        }
+
+        $proposals = Proposal::query()
+            ->whereIn('idProposal', $matches->pluck('idProposal')->unique()->all())
+            ->whereNull('deleteAt')
+            ->with('kategori')
+            ->get()
+            ->keyBy('idProposal');
+
+        $companies = User::query()
+            ->whereIn('id', $matches->pluck('company_user_id')->unique()->all())
+            ->where('role', 'sponsor')
+            ->with('companyProfile')
+            ->get()
+            ->keyBy('id');
+
+        $campaigns = Campaign::query()
+            ->whereIn('idCampaign', $matches->pluck('idCampaign')->filter()->unique()->all())
+            ->get()
+            ->keyBy('idCampaign');
+
+        $trackings = TrackingPipeline::query()
+            ->whereIn('idProposal', $matches->pluck('idProposal')->unique()->all())
+            ->whereIn('company_user_id', $matches->pluck('company_user_id')->unique()->all())
+            ->get()
+            ->keyBy(fn (TrackingPipeline $tracking) => $tracking->idProposal.'-'.$tracking->company_user_id);
+
+        return $matches
+            ->map(function (SponsorMatch $match) use ($proposals, $companies, $campaigns, $trackings): ?array {
+                /** @var Proposal|null $proposal */
+                $proposal = $proposals->get((int) $match->idProposal);
+                /** @var User|null $company */
+                $company = $companies->get((int) $match->company_user_id);
+
+                if ($proposal === null || $company === null) {
+                    return null;
+                }
+
+                $profile = $company->companyProfile;
+
+                /** @var Campaign|null $campaign */
+                $campaign = $campaigns->get((int) $match->idCampaign);
+
+                $fundingMin = $profile?->sponsorship_min ?? $campaign?->budgetMin;
+                $fundingMax = $profile?->sponsorship_max ?? $campaign?->budgetMax;
+
+                return [
+                    'company_id' => (int) $company->id,
+                    'company_name' => $profile?->companyName ?? $company->name,
+                    'logo_url' => $profile?->logoUrl(),
+                    'score' => (int) $match->score,
+                    'reason' => $match->reason,
+                    'factors' => $match->factors ?? [],
+                    'funding_min' => $fundingMin === null ? null : (int) $fundingMin,
+                    'funding_max' => $fundingMax === null ? null : (int) $fundingMax,
+                    'proposal_id' => (int) $proposal->idProposal,
+                    'proposal_title' => $proposal->title,
+                    'proposal_category' => $proposal->kategori?->name,
+                    'campaign' => $campaign === null
+                        ? null
+                        : ['id' => (int) $campaign->idCampaign, 'title' => $campaign->title],
+                    'source' => $campaign === null ? 'profile' : 'campaign',
+                    'source_label' => $campaign === null ? 'Berdasarkan Profil' : 'Berdasarkan Campaign',
+                    'already_sent' => $trackings->has($proposal->idProposal.'-'.$company->id),
+                    'href' => route('recommendations.index', ['proposal' => $proposal->idProposal]),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 
     /**
@@ -156,13 +282,21 @@ class DashboardController extends Controller
             ->get()
             ->keyBy('idProposal');
 
+        $campaigns = Campaign::query()
+            ->whereIn('idCampaign', $matches->pluck('idCampaign')->filter()->unique()->all())
+            ->get()
+            ->keyBy('idCampaign');
+
         return $matches
-            ->map(function (SponsorMatch $match) use ($proposals): ?array {
+            ->map(function (SponsorMatch $match) use ($proposals, $campaigns): ?array {
                 $proposal = $proposals->get((int) $match->idProposal);
 
                 if (! $proposal) {
                     return null;
                 }
+
+                /** @var Campaign|null $campaign */
+                $campaign = $campaigns->get((int) $match->idCampaign);
 
                 return [
                     'proposal_id' => (int) $proposal->idProposal,
@@ -173,6 +307,11 @@ class DashboardController extends Controller
                     'location' => $proposal->location,
                     'budget' => $this->moneyRange((int) $proposal->budgetMin, (int) $proposal->budgetMax),
                     'description' => $proposal->desctiption,
+                    'campaign' => $campaign === null
+                        ? null
+                        : ['id' => (int) $campaign->idCampaign, 'title' => $campaign->title],
+                    'source' => $campaign === null ? 'profile' : 'campaign',
+                    'source_label' => $campaign === null ? 'Berdasarkan Profil' : 'Berdasarkan Campaign',
                     'href' => route('company.recommendations.index'),
                 ];
             })

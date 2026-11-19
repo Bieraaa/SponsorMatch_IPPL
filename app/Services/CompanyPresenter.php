@@ -64,18 +64,40 @@ class CompanyPresenter
     }
 
     /**
+     * Postingan komunitas (feed, dashboard, dan profil akun).
+     *
+     * `company_name` dipertahankan demi kompatibilitas halaman detail
+     * perusahaan. Halaman feed memakai `author_*` agar postingan milik
+     * Event Organizer juga punya identitas yang jelas.
+     *
      * @return array<string, mixed>
      */
     public static function post(Post $post): array
     {
-        $companyName = $post->user?->companyProfile?->companyName ?? $post->user?->name;
+        $author = $post->user;
+        $profile = $author?->companyProfile;
+        $isCompany = $author?->isCompany() ?? false;
+
+        $authorName = $isCompany
+            ? ($profile?->companyName ?? $author?->name)
+            : $author?->name;
 
         return [
             'id' => (int) $post->idPost,
             'description' => $post->description,
             'image_url' => $post->imageUrl(),
             'created_at' => $post->createdAt?->toIso8601String(),
-            'company_name' => $companyName,
+            'updated_at' => $post->updateAt?->toIso8601String(),
+            'author_id' => (int) $post->idUser,
+            'author_name' => $authorName ?? 'Pengguna',
+            'author_avatar' => $author?->avatar,
+            'author_role' => $isCompany ? 'sponsor' : 'eo',
+            'author_role_label' => $isCompany ? 'Perusahaan' : 'Event Organizer',
+            'logo_url' => $profile?->logoUrl(),
+            'company_name' => $authorName,
+            'href' => $isCompany
+                ? route('companies.show', $post->idUser)
+                : route('accounts.show', $post->idUser),
         ];
     }
 }

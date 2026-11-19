@@ -78,6 +78,7 @@ class CompanyCampaignController extends Controller
                 'max_kb' => $banner['max_kb'],
                 'extensions' => $banner['extensions'],
             ],
+            'pdfMaxKb' => (int) config('sponsormatch.pdf.max_kb', 30720),
         ]);
     }
 
@@ -99,12 +100,14 @@ class CompanyCampaignController extends Controller
                 'required',
                 'file',
                 'mimes:pdf',
-                'max:'.(int) config('sponsormatch.pdf.max_kb', 5120),
+                'max:'.(int) config('sponsormatch.pdf.max_kb', 30720),
             ],
         ], [
             'file.required' => 'Pilih file PDF campaign terlebih dahulu.',
             'file.mimes' => 'File harus berformat PDF.',
-            'file.max' => 'Ukuran PDF maksimal '.(int) config('sponsormatch.pdf.max_kb', 5120).' KB.',
+            'file.max' => 'Ukuran PDF maksimal '
+                .(int) round((int) config('sponsormatch.pdf.max_kb', 30720) / 1024)
+                .' MB.',
         ]);
 
         try {

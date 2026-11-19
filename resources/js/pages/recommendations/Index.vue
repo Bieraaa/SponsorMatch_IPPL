@@ -11,6 +11,8 @@ import {
     Search,
     Send,
     Upload,
+    Users,
+    X,
 } from '@lucide/vue';
 import { computed, nextTick, ref, watch } from 'vue';
 import SendProposalModal from '@/components/recommendations/SendProposalModal.vue';
@@ -24,6 +26,7 @@ import type {
     RecommendationAiStatus,
     RecommendationItem,
     RecommendationPagination,
+    SendableCompany,
 } from '@/types/recommendation';
 
 /**
@@ -48,6 +51,42 @@ const selectedProposal = ref<number | null>(props.selectedProposalId);
 const listTop = ref<HTMLElement | null>(null);
 const modalOpen = ref(false);
 const activeRecommendation = ref<RecommendationItem | null>(null);
+const modalTargets = ref<SendableCompany[]>([]);
+const selectedCompanyIds = ref<number[]>([]);
+
+const selectableItems = computed(() =>
+    props.recommendations.data.filter((item) => !item.already_sent),
+);
+
+const selectedItems = computed(() =>
+    selectableItems.value.filter((item) =>
+        selectedCompanyIds.value.includes(item.company_id),
+    ),
+);
+
+const allSelected = computed(
+    () =>
+        selectableItems.value.length > 0 &&
+        selectableItems.value.every((item) =>
+            selectedCompanyIds.value.includes(item.company_id),
+        ),
+);
+
+// Buang pilihan yang tidak lagi ada di halaman / sudah terkirim.
+watch(
+    () => props.recommendations.data,
+    (data) => {
+        const available = new Set(
+            data
+                .filter((item) => !item.already_sent)
+                .map((item) => item.company_id),
+        );
+
+        selectedCompanyIds.value = selectedCompanyIds.value.filter((id) =>
+            available.has(id),
+        );
+    },
+);
 
 watch(
     () => props.selectedProposalId,
@@ -87,6 +126,7 @@ function changePage(page: number): void {
         return;
     }
 
+    selectedCompanyIds.value = [];
     loading.value = true;
 
     router.get(
@@ -109,6 +149,7 @@ function changeProposal(): void {
         return;
     }
 
+    selectedCompanyIds.value = [];
     loading.value = true;
 
     router.get(
@@ -150,7 +191,47 @@ function openSendModal(item: RecommendationItem): void {
         return;
     }
 
+    modalTargets.value = [];
     activeRecommendation.value = item;
+    modalOpen.value = true;
+}
+
+function toggleSelect(companyId: number): void {
+    if (selectedCompanyIds.value.includes(companyId)) {
+        selectedCompanyIds.value = selectedCompanyIds.value.filter(
+            (id) => id !== companyId,
+        );
+
+        return;
+    }
+
+    selectedCompanyIds.value = [...selectedCompanyIds.value, companyId];
+}
+
+function toggleSelectAll(): void {
+    selectedCompanyIds.value = allSelected.value
+        ? []
+        : selectableItems.value.map((item) => item.company_id);
+}
+
+function toSendable(item: RecommendationItem): SendableCompany {
+    return {
+        company_id: item.company_id,
+        company_name: item.company_name,
+        logo_url: item.logo_url,
+        industry: item.industry,
+        campaign_options: item.campaign_options,
+    };
+}
+
+/** Kirim SATU proposal ke beberapa perusahaan terpilih sekaligus. */
+function openBulkSend(): void {
+    if (selectedItems.value.length === 0) {
+        return;
+    }
+
+    activeRecommendation.value = null;
+    modalTargets.value = selectedItems.value.map(toSendable);
     modalOpen.value = true;
 }
 
@@ -170,9 +251,9 @@ function formatDate(value: string | null): string {
 <template>
     <Head title="Rekomendasi Sponsor" />
 
-    <div class="min-h-full bg-white pb-10">
+    <div class="min-h-full bg-[#F7F8FA] pb-10">
         <div
-            class="mx-auto grid max-w-[1180px] items-start gap-6 px-4 py-6 xl:grid-cols-[minmax(0,1fr)_294px] xl:px-0"
+            class="mx-auto grid w-full max-w-[1180px] items-start gap-6 px-4 py-6 xl:grid-cols-[minmax(0,1fr)_294px] xl:px-0"
         >
             <!-- ===================== Kolom utama ===================== -->
             <div class="min-w-0">
@@ -194,7 +275,7 @@ function formatDate(value: string | null): string {
 
                         <button
                             type="button"
-                            class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-sm-navy transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 text-xs font-semibold text-sm-navy transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                             :disabled="loading || selectedProposalId === null"
                             @click="refreshRecommendations"
                         >
@@ -236,7 +317,9 @@ function formatDate(value: string | null): string {
                                     {{ proposal.kategori ?? 'Tanpa kategori' }}
                                 </option>
                             </select>
-                            <p class="text-[11px] leading-relaxed text-sm-card/60">
+                            <p
+                                class="text-[11px] leading-relaxed text-sm-card/60"
+                            >
                                 Setiap proposal memiliki hasil matching sendiri.
                             </p>
                         </div>
@@ -282,7 +365,7 @@ function formatDate(value: string | null): string {
                     </p>
                     <Link
                         href="/proposals?buat=1"
-                        class="mt-5 inline-flex items-center gap-2 rounded-lg bg-sm-red px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-sm-red-dark"
+                        class="mt-5 inline-flex h-10 items-center gap-2 rounded-lg bg-sm-red px-4 text-xs font-semibold text-white transition-colors hover:bg-sm-red-dark"
                     >
                         <FileText class="h-4 w-4" />
                         Buat Proposal
@@ -301,6 +384,59 @@ function formatDate(value: string | null): string {
                             Halaman {{ recommendations.current_page }} dari
                             {{ recommendations.last_page }}
                         </p>
+                    </div>
+
+                    <!-- Pilih beberapa perusahaan sekaligus -->
+                    <div
+                        v-if="selectableItems.length > 0"
+                        class="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2"
+                    >
+                        <label
+                            class="flex cursor-pointer items-center gap-2 text-[11px] font-medium text-sm-navy"
+                        >
+                            <input
+                                type="checkbox"
+                                class="h-4 w-4 rounded border-gray-300 text-sm-red focus:ring-sm-red"
+                                :checked="allSelected"
+                                @change="toggleSelectAll"
+                            />
+                            Pilih semua perusahaan di halaman ini ({{
+                                selectableItems.length
+                            }})
+                        </label>
+
+                        <div class="flex items-center gap-2">
+                            <span
+                                v-if="selectedItems.length > 0"
+                                class="inline-flex items-center gap-1 text-[11px] font-semibold text-sm-red"
+                            >
+                                <Users class="h-3.5 w-3.5" />
+                                {{ selectedItems.length }} dipilih
+                            </span>
+                            <button
+                                type="button"
+                                class="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[11px] font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                                :class="
+                                    selectedItems.length > 0
+                                        ? 'bg-sm-red hover:bg-sm-red-dark'
+                                        : 'bg-gray-400'
+                                "
+                                :disabled="selectedItems.length === 0"
+                                @click="openBulkSend"
+                            >
+                                <Send class="h-3.5 w-3.5" />
+                                Kirim ke {{ selectedItems.length }} Perusahaan
+                            </button>
+                            <button
+                                v-if="selectedItems.length > 0"
+                                type="button"
+                                class="inline-flex h-8 items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 text-[11px] font-semibold text-sm-card/70 transition-colors hover:bg-gray-50"
+                                @click="selectedCompanyIds = []"
+                            >
+                                <X class="h-3.5 w-3.5" />
+                                Reset
+                            </button>
+                        </div>
                     </div>
 
                     <div class="relative mt-3">
@@ -327,7 +463,12 @@ function formatDate(value: string | null): string {
                                 v-for="item in recommendations.data"
                                 :key="item.company_id"
                                 :recommendation="item"
+                                selectable
+                                :selected="
+                                    selectedCompanyIds.includes(item.company_id)
+                                "
                                 @send="openSendModal"
+                                @toggle="toggleSelect"
                             />
                         </div>
 
@@ -404,7 +545,7 @@ function formatDate(value: string | null): string {
                         mengelola proposal
                     </p>
                     <a
-                        href="/#harga"
+                        href="/billing"
                         class="mt-4 inline-flex w-full items-center justify-center rounded-md bg-sm-amber py-2.5 text-xs font-semibold text-sm-navy transition-opacity hover:opacity-90"
                     >
                         Lihat Paket
@@ -413,7 +554,7 @@ function formatDate(value: string | null): string {
 
                 <!-- Postingan Terbaru -->
                 <section
-                    class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                    class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
                 >
                     <div class="flex items-start justify-between gap-3">
                         <h2 class="font-semibold text-sm-navy">
@@ -471,7 +612,10 @@ function formatDate(value: string | null): string {
                         </li>
                     </ul>
 
-                    <p v-else class="mt-3 text-[11px] leading-relaxed text-sm-card/60">
+                    <p
+                        v-else
+                        class="mt-3 text-[11px] leading-relaxed text-sm-card/60"
+                    >
                         Belum ada postingan perusahaan.
                     </p>
                 </section>
@@ -481,6 +625,7 @@ function formatDate(value: string | null): string {
         <SendProposalModal
             v-model:open="modalOpen"
             :recommendation="activeRecommendation"
+            :targets="modalTargets"
             :proposals="proposals"
             :default-proposal-id="selectedProposalId"
         />

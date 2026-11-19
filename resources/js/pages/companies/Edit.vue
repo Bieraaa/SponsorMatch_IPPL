@@ -107,12 +107,14 @@ onBeforeUnmount(() => {
     <Head title="Profil Perusahaan" />
 
     <div class="min-h-full bg-[#F7F8FA] pb-12">
-        <div class="mx-auto max-w-[980px] px-4 py-6 xl:px-0">
+        <div class="mx-auto w-full max-w-[1180px] px-4 py-6 xl:px-0">
             <div
                 class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
             >
                 <div>
-                    <h1 class="text-2xl font-semibold text-sm-navy lg:text-[30px]">
+                    <h1
+                        class="text-2xl font-semibold text-sm-navy lg:text-[30px]"
+                    >
                         Profil Perusahaan
                     </h1>
                     <p class="mt-2 text-sm text-sm-card/70">
@@ -123,9 +125,9 @@ onBeforeUnmount(() => {
 
                 <Link
                     href="/company/campaigns"
-                    class="text-xs font-semibold text-sm-red hover:underline"
+                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 text-xs font-semibold text-sm-navy transition-colors hover:bg-gray-50"
                 >
-                    Kelola Campaign →
+                    Kelola Campaign
                 </Link>
             </div>
 
@@ -134,12 +136,16 @@ onBeforeUnmount(() => {
                 @submit.prevent="submit"
             >
                 <section>
-                    <h2 class="flex items-center gap-2 text-sm font-semibold text-sm-navy">
+                    <h2
+                        class="flex items-center gap-2 text-sm font-semibold text-sm-navy"
+                    >
                         <Building2 class="h-4 w-4 text-sm-red" />
                         Identitas perusahaan
                     </h2>
 
-                    <div class="mt-4 grid gap-5 md:grid-cols-[180px_minmax(0,1fr)]">
+                    <div
+                        class="mt-4 grid gap-5 md:grid-cols-[180px_minmax(0,1fr)]"
+                    >
                         <div>
                             <div
                                 class="flex h-[150px] w-[150px] items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-gray-50"
@@ -150,7 +156,10 @@ onBeforeUnmount(() => {
                                     alt="Logo perusahaan"
                                     class="h-full w-full object-contain p-3"
                                 />
-                                <ImagePlus v-else class="h-8 w-8 text-gray-400" />
+                                <ImagePlus
+                                    v-else
+                                    class="h-8 w-8 text-gray-400"
+                                />
                             </div>
 
                             <input
@@ -169,10 +178,15 @@ onBeforeUnmount(() => {
                                 Pilih Logo
                             </button>
 
-                            <p class="mt-2 text-[10px] leading-relaxed text-sm-card/50">
+                            <p
+                                class="mt-2 text-[10px] leading-relaxed text-sm-card/50"
+                            >
                                 {{ formats }} · maks. {{ maxSizeMb }} MB
                             </p>
-                            <InputError :message="form.errors.logo" class="mt-1" />
+                            <InputError
+                                :message="form.errors.logo"
+                                class="mt-1"
+                            />
                         </div>
 
                         <div class="grid gap-4 sm:grid-cols-2">
@@ -213,7 +227,10 @@ onBeforeUnmount(() => {
                                     placeholder="Contoh: Teknologi, Otomotif"
                                     class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-sm-navy outline-none placeholder:text-gray-400 focus:border-sm-red focus:ring-2 focus:ring-sm-red/15"
                                 />
-                                <InputError class="mt-1" :message="form.errors.industry" />
+                                <InputError
+                                    class="mt-1"
+                                    :message="form.errors.industry"
+                                />
                             </div>
 
                             <div>
@@ -231,7 +248,10 @@ onBeforeUnmount(() => {
                                     placeholder="https://perusahaan.co.id"
                                     class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-sm-navy outline-none placeholder:text-gray-400 focus:border-sm-red focus:ring-2 focus:ring-sm-red/15"
                                 />
-                                <InputError class="mt-1" :message="form.errors.website" />
+                                <InputError
+                                    class="mt-1"
+                                    :message="form.errors.website"
+                                />
                             </div>
 
                             <div class="sm:col-span-2">
@@ -354,7 +374,9 @@ onBeforeUnmount(() => {
                 </section>
 
                 <section class="mt-7 border-t border-gray-100 pt-6">
-                    <h2 class="flex items-center gap-2 text-sm font-semibold text-sm-navy">
+                    <h2
+                        class="flex items-center gap-2 text-sm font-semibold text-sm-navy"
+                    >
                         <Tags class="h-4 w-4 text-sm-red" />
                         Kategori sponsorship yang diminati
                     </h2>
@@ -392,7 +414,10 @@ onBeforeUnmount(() => {
                             </span>
                         </label>
                     </div>
-                    <InputError class="mt-1" :message="form.errors.categories" />
+                    <InputError
+                        class="mt-1"
+                        :message="form.errors.categories"
+                    />
                 </section>
 
                 <div
@@ -400,14 +425,14 @@ onBeforeUnmount(() => {
                 >
                     <Link
                         href="/company/campaigns"
-                        class="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-xs font-semibold text-sm-navy transition-colors hover:bg-gray-50"
+                        class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-200 bg-white px-4 text-xs font-semibold text-sm-navy transition-colors hover:bg-gray-50"
                     >
                         Batal
                     </Link>
                     <button
                         type="submit"
                         :disabled="form.processing"
-                        class="inline-flex items-center gap-2 rounded-lg bg-sm-red px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-sm-red-dark disabled:cursor-not-allowed disabled:opacity-60"
+                        class="inline-flex h-10 items-center gap-2 rounded-lg bg-sm-red px-4 text-xs font-semibold text-white transition-colors hover:bg-sm-red-dark disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         <Save class="h-4 w-4" />
                         {{ form.processing ? 'Menyimpan...' : 'Simpan Profil' }}

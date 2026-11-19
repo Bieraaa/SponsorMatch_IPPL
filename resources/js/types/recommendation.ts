@@ -23,7 +23,8 @@ export type RecommendationCampaign = {
     is_active: boolean;
 };
 
-export type CampaignOption = {    id: number;
+export type CampaignOption = {
+    id: number;
     title: string;
     budget_min: number;
     budget_max: number;

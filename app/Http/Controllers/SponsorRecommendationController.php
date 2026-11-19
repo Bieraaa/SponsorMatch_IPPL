@@ -240,9 +240,11 @@ class SponsorRecommendationController extends Controller
     private function latestPosts(): array
     {
         return Post::query()
-            ->whereNull('deleteAt')
+            ->visible()
+            ->whereHas('user', fn ($author) => $author->where('isActive', true))
             ->with(['user.companyProfile'])
             ->orderByDesc('createdAt')
+            ->orderByDesc('idPost')
             ->limit(4)
             ->get()
             ->map(fn (Post $post) => CompanyPresenter::post($post))

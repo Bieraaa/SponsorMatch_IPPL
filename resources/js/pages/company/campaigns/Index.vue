@@ -1,19 +1,12 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import {
-    ClipboardList,
-    Megaphone,
-    Plus,
-    Send,
-} from '@lucide/vue';
+import { ClipboardList, FileText, Megaphone, Plus, Send } from '@lucide/vue';
 import { computed, onMounted, ref } from 'vue';
+import { toast } from 'vue-sonner';
 import CampaignCard from '@/components/company/CampaignCard.vue';
 import CampaignEmptyState from '@/components/company/CampaignEmptyState.vue';
 import CampaignFormModal from '@/components/company/CampaignFormModal.vue';
-import {
-    destroy,
-    status as updateStatus,
-} from '@/routes/company/campaigns';
+import { destroy, status as updateStatus } from '@/routes/company/campaigns';
 import type {
     CampaignCategoryOption,
     CampaignStats,
@@ -33,6 +26,7 @@ const props = defineProps<{
     categories: CampaignCategoryOption[];
     stats: CampaignStats;
     bannerConfig: UploadConfig;
+    pdfMaxKb: number;
 }>();
 
 const modalOpen = ref(false);
@@ -48,25 +42,33 @@ const statCards = computed(() => [
         key: 'total',
         label: 'Total campaign',
         value: props.stats.total,
-        tone: 'text-sm-navy',
+        icon: ClipboardList,
+        circle: 'bg-sm-navy',
+        hint: 'Seluruh campaign yang pernah dibuat',
     },
     {
         key: 'active',
         label: 'Campaign aktif',
         value: props.stats.active,
-        tone: 'text-emerald-600',
+        icon: Megaphone,
+        circle: 'bg-[#46B450]',
+        hint: 'Tayang sebagai peluang sponsor',
     },
     {
         key: 'draft',
         label: 'Draft / nonaktif',
         value: props.stats.draft,
-        tone: 'text-amber-600',
+        icon: FileText,
+        circle: 'bg-[#F3B300]',
+        hint: 'Belum ditayangkan ke Event Organizer',
     },
     {
         key: 'proposals',
         label: 'Proposal masuk',
         value: props.stats.proposals,
-        tone: 'text-sm-navy',
+        icon: Send,
+        circle: 'bg-[#5B7DBE]',
+        hint: 'Proposal yang masuk ke campaign kamu',
     },
 ]);
 
@@ -94,6 +96,12 @@ function changeStatus(
             onFinish: () => {
                 busyId.value = null;
             },
+            onError: (errors) => {
+                toast.error(
+                    Object.values(errors)[0] ??
+                        'Campaign gagal diubah. Coba lagi.',
+                );
+            },
         },
     );
 }
@@ -114,6 +122,12 @@ function endCampaign(campaign: CompanyCampaign): void {
         onFinish: () => {
             busyId.value = null;
         },
+        onError: (errors) => {
+            toast.error(
+                Object.values(errors)[0] ??
+                    'Campaign gagal diakhiri. Coba lagi.',
+            );
+        },
     });
 }
 
@@ -132,30 +146,32 @@ onMounted(() => {
     <Head title="Campaign Saya" />
 
     <div class="min-h-full bg-[#F7F8FA] pb-12">
-        <div class="mx-auto max-w-[1180px] px-4 py-6 xl:px-0">
+        <div class="mx-auto w-full max-w-[1180px] px-4 py-6 xl:px-0">
             <div
                 class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
             >
                 <div>
-                    <h1 class="text-2xl font-semibold text-sm-navy lg:text-[30px]">
+                    <h1
+                        class="text-2xl font-semibold text-sm-navy lg:text-[30px]"
+                    >
                         Campaign Saya
                     </h1>
                     <p class="mt-2 max-w-2xl text-sm text-sm-card/70">
-                        Campaign adalah peluang sponsorship yang kamu buka
-                        untuk event organizer. Campaign bersifat opsional.
+                        Campaign adalah peluang sponsorship yang kamu buka untuk
+                        event organizer. Campaign bersifat opsional.
                     </p>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2">
                     <Link
                         href="/company/profile"
-                        class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-xs font-semibold text-sm-navy transition-colors hover:bg-gray-50"
+                        class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 text-xs font-semibold text-sm-navy transition-colors hover:bg-gray-50"
                     >
                         Profil Perusahaan
                     </Link>
                     <button
                         type="button"
-                        class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-sm-red px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-sm-red-dark"
+                        class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-sm-red px-4 text-xs font-semibold text-white transition-colors hover:bg-sm-red-dark"
                         @click="openCreate"
                     >
                         <Plus class="h-4 w-4" />
@@ -165,21 +181,34 @@ onMounted(() => {
             </div>
 
             <!-- Ringkasan -->
-            <div class="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <div
+            <div class="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <article
                     v-for="card in statCards"
                     :key="card.key"
-                    class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                    class="flex h-full min-h-[116px] items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
                 >
-                    <p
-                        class="text-[10px] font-semibold tracking-wide text-sm-card/50 uppercase"
+                    <span
+                        class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white"
+                        :class="card.circle"
                     >
-                        {{ card.label }}
-                    </p>
-                    <p class="mt-1 text-2xl font-bold" :class="card.tone">
-                        {{ card.value }}
-                    </p>
-                </div>
+                        <component :is="card.icon" class="h-6 w-6" />
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-semibold text-sm-navy">
+                            {{ card.label }}
+                        </p>
+                        <p
+                            class="mt-0.5 text-[30px] leading-tight font-bold text-sm-navy xl:text-[32px]"
+                        >
+                            {{ card.value }}
+                        </p>
+                        <p
+                            class="mt-1 line-clamp-2 min-h-[2.4em] text-[11px] leading-snug text-sm-card/60"
+                        >
+                            {{ card.hint }}
+                        </p>
+                    </div>
+                </article>
             </div>
 
             <!-- Catatan opsional -->
@@ -224,10 +253,14 @@ onMounted(() => {
 
                 <div
                     v-if="stats.proposals > 0"
-                    class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                    class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
                 >
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <p class="flex items-center gap-2 text-xs font-semibold text-sm-navy">
+                    <div
+                        class="flex flex-wrap items-center justify-between gap-3"
+                    >
+                        <p
+                            class="flex items-center gap-2 text-xs font-semibold text-sm-navy"
+                        >
                             <ClipboardList class="h-4 w-4 text-sm-red" />
                             {{ stats.proposals }} proposal masuk ke campaign
                             kamu
@@ -249,6 +282,7 @@ onMounted(() => {
             :campaign="editing"
             :categories="categories"
             :banner-config="bannerConfig"
+            :pdf-max-kb="pdfMaxKb"
         />
     </div>
 </template>

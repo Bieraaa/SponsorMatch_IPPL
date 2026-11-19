@@ -1,13 +1,19 @@
 
 <?php
 
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\BillingController;
+use App\Http\Controllers\CollaborationController;
 use App\Http\Controllers\CompanyCampaignController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanyRecommendationController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HelpController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OfferController;
 use App\Http\Controllers\OtpController;
+use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SponsorRecommendationController;
@@ -84,11 +90,83 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'verified:otp.show'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    /*
+    |----------------------------------------------------------------------
+    | Negosiasi penawaran (EO & Perusahaan)
+    |----------------------------------------------------------------------
+    | GET  /offers              → daftar penawaran sesuai peran
+    | POST /offers/{offer}/respond → terima / tolak / penawaran balik
+    |
+    | Hanya pihak penerima yang boleh merespons penawaran `pending`.
+    */
+    Route::get('offers', [OfferController::class, 'index'])
+        ->name('offers.index');
+
+    Route::post('offers/{offer}/respond', [OfferController::class, 'respond'])
+        ->name('offers.respond');
+
     Route::get('/search', [SearchController::class, 'index'])->name('search');
+
+    /*
+    |----------------------------------------------------------------------
+    | Profil akun publik
+    |----------------------------------------------------------------------
+    | Dibuka dari hasil pencarian. Akun perusahaan diarahkan ke halaman
+    | companies.show, sedangkan Event Organizer memakai halaman ini.
+    */
+    Route::get('accounts/{user}', [AccountController::class, 'show'])
+        ->name('accounts.show');
+
+    /*
+    |----------------------------------------------------------------------
+    | Postingan komunitas (EO & Perusahaan)
+    |----------------------------------------------------------------------
+    | GET    /posts           → feed semua postingan (scope=all|mine)
+    | POST   /posts           → buat postingan milik sendiri
+    | PATCH  /posts/{post}    → ubah postingan milik sendiri
+    | DELETE /posts/{post}    → hapus (isi deleteAt) milik sendiri
+    */
+    Route::get('posts', [PostController::class, 'index'])->name('posts.index');
+    Route::post('posts', [PostController::class, 'store'])->name('posts.store');
+    Route::patch('posts/{post}', [PostController::class, 'update'])->name('posts.update');
+    Route::delete('posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+
+    /*
+    |----------------------------------------------------------------------
+    | Riwayat kolaborasi (EO & Perusahaan)
+    |----------------------------------------------------------------------
+    | Menampilkan tracking yang sudah menjadi kerja sama. EO dapat
+    | mengirim laporan realisasi event; kedua pihak dapat saling mengulas
+    | setelah kolaborasi selesai.
+    */
+    Route::get('collaborations', [CollaborationController::class, 'index'])
+        ->name('collaborations.index');
+    Route::post('collaborations/{tracking}/report', [CollaborationController::class, 'report'])
+        ->name('collaborations.report');
+    Route::post('collaborations/{tracking}/review', [CollaborationController::class, 'review'])
+        ->name('collaborations.review');
+
+    /*
+    |----------------------------------------------------------------------
+    | Langganan & pembayaran (halaman tampilan)
+    |----------------------------------------------------------------------
+    | Gateway pembayaran belum diintegrasikan. Halaman ini hanya
+    | menyiapkan paket, metode pembayaran, dan ringkasan pesanan.
+    */
+    Route::get('billing', [BillingController::class, 'index'])
+        ->name('billing.index');
+
+    /*
+    |----------------------------------------------------------------------
+    | Pusat bantuan
+    |----------------------------------------------------------------------
+    */
+    Route::get('bantuan', [HelpController::class, 'index'])
+        ->name('help.index');
 
     /*
     |----------------------------------------------------------------------

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
-import { Building2, Megaphone, Send } from '@lucide/vue';
+import { Building2, CircleAlert, Megaphone, Send } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
 import {
@@ -17,6 +17,8 @@ import type { ProposalOption, SendableCompany } from '@/types/recommendation';
 const props = defineProps<{
     open: boolean;
     recommendation: SendableCompany | null;
+    /** Daftar perusahaan saat mengirim ke banyak perusahaan sekaligus. */
+    targets?: SendableCompany[];
     proposals: ProposalOption[];
     defaultProposalId: number | null;
 }>();
@@ -36,12 +38,30 @@ const form = useForm({
     redirect: 'recommendations' as const,
 });
 
-const campaigns = computed(() => props.recommendation?.campaign_options ?? []);
+/**
+ * Satu modal dipakai untuk dua alur:
+ *   - satu perusahaan (dari kartu rekomendasi / profil perusahaan)
+ *   - banyak perusahaan (aksi massal di halaman rekomendasi)
+ */
+const targetCompanies = computed<SendableCompany[]>(() => {
+    if (props.targets && props.targets.length > 0) {
+        return props.targets;
+    }
+
+    return props.recommendation ? [props.recommendation] : [];
+});
+
+const isBulk = computed(() => targetCompanies.value.length > 1);
+
+const campaigns = computed(() =>
+    isBulk.value ? [] : (targetCompanies.value[0]?.campaign_options ?? []),
+);
 
 const selectedProposalTitle = computed(
     () =>
-        props.proposals.find((proposal) => proposal.id === selectedProposal.value)
-            ?.title ?? '',
+        props.proposals.find(
+            (proposal) => proposal.id === selectedProposal.value,
+        )?.title ?? '',
 );
 
 watch(
@@ -62,7 +82,7 @@ watch(
 );
 
 watch(
-    () => props.recommendation?.company_id,
+    () => targetCompanies.value.map((item) => item.company_id).join(','),
     () => {
         selectedCampaign.value = '';
         form.clearErrors();
@@ -74,11 +94,11 @@ function close(): void {
 }
 
 function submit(): void {
-    if (!props.recommendation || selectedProposal.value === null) {
+    if (targetCompanies.value.length === 0 || selectedProposal.value === null) {
         return;
     }
 
-    form.sponsor_ids = [props.recommendation.company_id];
+    form.sponsor_ids = targetCompanies.value.map((item) => item.company_id);
     form.campaign_id =
         selectedCampaign.value === '' ? null : Number(selectedCampaign.value);
     form.message = message.value;
@@ -98,42 +118,96 @@ function submit(): void {
         <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-lg">
             <DialogHeader>
                 <DialogTitle class="text-lg font-semibold text-sm-navy">
-                    Kirim Proposal
+                    {{
+                        isBulk
+                            ? `Kirim Proposal ke ${targetCompanies.length} Perusahaan`
+                            : 'Kirim Proposal'
+                    }}
                 </DialogTitle>
                 <DialogDescription class="text-xs text-sm-card/70">
-                    Pilih proposal dan campaign tujuan. Campaign bersifat opsional —
-                    kamu bisa mengirim langsung ke perusahaan.
+                    <template v-if="isBulk">
+                        Proposal yang sama akan dikirim ke beberapa perusahaan
+                        sekaligus. Campaign tujuan hanya dapat dipilih saat
+                        mengirim ke satu perusahaan.
+                    </template>
+                    <template v-else>
+                        Pilih proposal dan campaign tujuan. Campaign bersifat
+                        opsional — kamu bisa mengirim langsung ke perusahaan.
+                    </template>
                 </DialogDescription>
             </DialogHeader>
 
             <div
-                v-if="recommendation"
-                class="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3"
+                v-if="Object.keys(form.errors).length > 0"
+                class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700"
+            >
+                <p class="flex items-center gap-1.5 font-semibold">
+                    <CircleAlert class="size-4 shrink-0" />
+                    Proposal gagal dikirim
+                </p>
+                <ul class="mt-1 list-disc space-y-0.5 pl-5">
+                    <li v-for="(message, field) in form.errors" :key="field">
+                        {{ message }}
+                    </li>
+                </ul>
+            </div>
+
+            <div
+                v-if="targetCompanies.length > 0"
+                class="rounded-xl border border-gray-200 bg-gray-50 p-3"
             >
                 <div
-                    class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-white"
+                    class="flex items-center gap-3"
+                    :class="isBulk ? 'mb-2' : ''"
                 >
-                    <img
-                        v-if="recommendation.logo_url"
-                        :src="recommendation.logo_url"
-                        :alt="`Logo ${recommendation.company_name}`"
-                        class="h-full w-full object-contain p-1"
-                    />
-                    <Building2 v-else class="h-5 w-5 text-gray-400" />
+                    <div
+                        class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-white"
+                    >
+                        <img
+                            v-if="!isBulk && targetCompanies[0]?.logo_url"
+                            :src="targetCompanies[0].logo_url"
+                            :alt="`Logo ${targetCompanies[0].company_name}`"
+                            class="h-full w-full object-contain p-1"
+                        />
+                        <Building2 v-else class="h-5 w-5 text-gray-400" />
+                    </div>
+                    <div class="min-w-0">
+                        <p class="truncate text-sm font-semibold text-sm-navy">
+                            {{
+                                isBulk
+                                    ? `${targetCompanies.length} perusahaan dipilih`
+                                    : targetCompanies[0].company_name
+                            }}
+                        </p>
+                        <p class="truncate text-xs text-sm-card/65">
+                            {{
+                                isBulk
+                                    ? 'Proposal akan dikirim ke semua perusahaan di bawah ini.'
+                                    : (targetCompanies[0]?.industry ??
+                                      'Perusahaan sponsor')
+                            }}
+                        </p>
+                    </div>
                 </div>
-                <div class="min-w-0">
-                    <p class="truncate text-sm font-semibold text-sm-navy">
-                        {{ recommendation.company_name }}
-                    </p>
-                    <p class="truncate text-xs text-sm-card/65">
-                        {{ recommendation.industry ?? 'Perusahaan sponsor' }}
-                    </p>
-                </div>
+
+                <ul v-if="isBulk" class="flex flex-wrap gap-1.5">
+                    <li
+                        v-for="company in targetCompanies"
+                        :key="company.company_id"
+                        class="inline-flex max-w-full items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-sm-navy"
+                    >
+                        <Building2 class="h-3 w-3 shrink-0 text-gray-400" />
+                        <span class="truncate">{{ company.company_name }}</span>
+                    </li>
+                </ul>
             </div>
 
             <form class="space-y-4" @submit.prevent="submit">
                 <div>
-                    <label for="proposal" class="mb-1 block text-xs font-semibold text-sm-navy">
+                    <label
+                        for="proposal"
+                        class="mb-1 block text-xs font-semibold text-sm-navy"
+                    >
                         Proposal yang dikirim <span class="text-sm-red">*</span>
                     </label>
                     <select
@@ -149,11 +223,17 @@ function submit(): void {
                             {{ proposal.title }} ({{ proposal.status }})
                         </option>
                     </select>
-                    <InputError :message="form.errors.sponsor_ids" class="mt-1" />
+                    <InputError
+                        :message="form.errors.sponsor_ids"
+                        class="mt-1"
+                    />
                 </div>
 
-                <div>
-                    <label for="campaign" class="mb-1 block text-xs font-semibold text-sm-navy">
+                <div v-if="!isBulk">
+                    <label
+                        for="campaign"
+                        class="mb-1 block text-xs font-semibold text-sm-navy"
+                    >
                         Campaign tujuan (opsional)
                     </label>
                     <select
@@ -177,13 +257,32 @@ function submit(): void {
                         class="mt-1 flex items-center gap-1 text-[11px] text-sm-card/60"
                     >
                         <Megaphone class="h-3 w-3" />
-                        Perusahaan ini belum membuka campaign aktif. Proposal tetap dapat dikirim.
+                        Perusahaan ini belum membuka campaign aktif. Proposal
+                        tetap dapat dikirim.
                     </p>
-                    <InputError :message="form.errors.campaign_id" class="mt-1" />
+                    <InputError
+                        :message="form.errors.campaign_id"
+                        class="mt-1"
+                    />
+                </div>
+
+                <div
+                    v-else
+                    class="flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2.5 text-[11px] leading-relaxed text-blue-800"
+                >
+                    <Megaphone class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span>
+                        Pengiriman massal dikirim langsung ke profil perusahaan
+                        (tanpa campaign). Kirim satu per satu bila ingin memilih
+                        campaign tujuan.
+                    </span>
                 </div>
 
                 <div>
-                    <label for="message" class="mb-1 block text-xs font-semibold text-sm-navy">
+                    <label
+                        for="message"
+                        class="mb-1 block text-xs font-semibold text-sm-navy"
+                    >
                         Pesan pengantar (opsional)
                     </label>
                     <textarea
@@ -207,15 +306,28 @@ function submit(): void {
                     </button>
                     <button
                         type="submit"
-                        :disabled="form.processing || !recommendation || selectedProposal === null"
+                        :disabled="
+                            form.processing ||
+                            targetCompanies.length === 0 ||
+                            selectedProposal === null
+                        "
                         class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-sm-red px-4 text-xs font-semibold text-white transition-colors hover:bg-sm-red-dark disabled:opacity-60"
                     >
                         <Send class="h-3.5 w-3.5" />
-                        {{ form.processing ? 'Mengirim...' : 'Kirim Proposal' }}
+                        {{
+                            form.processing
+                                ? 'Mengirim...'
+                                : isBulk
+                                  ? `Kirim ke ${targetCompanies.length} Perusahaan`
+                                  : 'Kirim Proposal'
+                        }}
                     </button>
                 </DialogFooter>
 
-                <p v-if="selectedProposalTitle" class="text-[11px] text-sm-card/55">
+                <p
+                    v-if="selectedProposalTitle"
+                    class="text-[11px] text-sm-card/55"
+                >
                     Proposal: {{ selectedProposalTitle }}
                 </p>
             </form>

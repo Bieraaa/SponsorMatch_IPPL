@@ -366,6 +366,58 @@ class RecommendationMatchingTest extends TestCase
         $this->assertDatabaseCount('trackingpipeline', 0);
     }
 
+    public function test_eo_dashboard_uses_stored_recommendations_and_shows_target_campaign(): void
+    {
+        $eo = User::factory()->create();
+        $proposal = $this->makeProposal($eo);
+        $company = User::factory()->company()->create();
+        $this->makeProfile($company, ['companyName' => 'PT Dashboard Sponsor']);
+        $campaign = $this->makeCampaign($company, ['title' => 'Campaign Dashboard 2026']);
+
+        SponsorMatch::create([
+            'idProposal' => $proposal->idProposal,
+            'idCampaign' => $campaign->idCampaign,
+            'company_user_id' => $company->id,
+            'score' => 91,
+            'reason' => 'Campaign teknologi sangat relevan dengan event.',
+            'factors' => ['Kategori sama.'],
+            'source' => 'campaign',
+            'direction' => SponsorMatch::DIRECTION_EO_TO_COMPANY,
+            'generateAt' => now(),
+        ]);
+
+        $props = $this->actingAs($eo)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->viewData('page')['props'];
+
+        $this->assertCount(1, $props['dashboardEo']['recommendations']);
+
+        $item = $props['dashboardEo']['recommendations'][0];
+
+        $this->assertSame('PT Dashboard Sponsor', $item['company_name']);
+        $this->assertSame('Festival Musik Nusantara', $item['proposal_title']);
+        $this->assertSame('Campaign Dashboard 2026', $item['campaign']['title']);
+        $this->assertSame('campaign', $item['source']);
+        $this->assertStringContainsString(
+            'proposal='.$proposal->idProposal,
+            $item['href'],
+        );
+    }
+
+    public function test_eo_dashboard_recommendations_are_empty_without_stored_matches(): void
+    {
+        $eo = User::factory()->create();
+        $this->makeProposal($eo);
+
+        $props = $this->actingAs($eo)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->viewData('page')['props'];
+
+        $this->assertSame([], $props['dashboardEo']['recommendations']);
+    }
+
     /**
      * @param  array<string, mixed>  $overrides
      */

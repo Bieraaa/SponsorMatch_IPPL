@@ -75,7 +75,7 @@ const budget = computed(() => {
         return 'Belum ditentukan';
     }
 
-    const format = (value: number) => `Rp${value.toLocaleString('id-ID')}`;
+    const format = (value: number) => `Rp ${value.toLocaleString('id-ID')}`;
 
     return min === max ? format(min) : `${format(min)} – ${format(max)}`;
 });
@@ -187,7 +187,9 @@ const budget = computed(() => {
                     :key="factor"
                     class="flex items-start gap-1.5"
                 >
-                    <span class="mt-1.5 size-1 shrink-0 rounded-full bg-sm-red" />
+                    <span
+                        class="mt-1.5 size-1 shrink-0 rounded-full bg-sm-red"
+                    />
                     {{ factor }}
                 </li>
             </ul>
@@ -201,7 +203,10 @@ const budget = computed(() => {
                         : '/company/recommendations'
                 "
                 class="inline-flex h-9 flex-1 items-center justify-center rounded-lg border border-gray-200 text-xs font-semibold text-sm-navy transition-colors hover:bg-gray-50"
-                :class="{ 'pointer-events-none opacity-60': !recommendation.tracking_id }"
+                :class="{
+                    'pointer-events-none opacity-60':
+                        !recommendation.tracking_id,
+                }"
             >
                 Lihat Penawaran
             </Link>

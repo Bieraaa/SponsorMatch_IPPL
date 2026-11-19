@@ -29,6 +29,8 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="GEMINI_API_KEY" value=""/>
         <env name="GEMINI_MODEL" value="gemini-test"/>
+        <env name="PDF_MAX_KB" value="30720"/>
+        <env name="POST_IMAGE_MAX_KB" value="4096"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>

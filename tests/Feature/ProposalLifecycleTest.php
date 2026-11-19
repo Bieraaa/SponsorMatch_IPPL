@@ -344,6 +344,48 @@ class ProposalLifecycleTest extends TestCase
             ->assertDownload('demo.pdf');
     }
 
+    public function test_send_supports_more_than_two_companies_in_one_action(): void
+    {
+        $owner = User::factory()->create();
+        $companies = collect(range(1, 3))
+            ->map(fn () => User::factory()->company()->create());
+
+        $proposal = $this->proposal($owner, ['status' => 'published']);
+
+        $this->actingAs($owner)
+            ->post(route('proposals.send.store', $proposal), [
+                'sponsor_ids' => $companies->pluck('id')->all(),
+                'message' => 'Kami membuka kesempatan kolaborasi untuk tiga perusahaan.',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(3, TrackingPipeline::count());
+        $this->assertSame(3, TrackingPipeline::where('stage', 'sent')->count());
+        $this->assertSame(
+            3,
+            TrackingPipeline::where('message', 'Kami membuka kesempatan kolaborasi untuk tiga perusahaan.')->count(),
+        );
+        $this->assertEqualsCanonicalizing(
+            $companies->pluck('id')->all(),
+            TrackingPipeline::pluck('company_user_id')->all(),
+        );
+    }
+
+    public function test_send_rejects_duplicate_sponsor_ids(): void
+    {
+        $owner = User::factory()->create();
+        $company = User::factory()->company()->create();
+        $proposal = $this->proposal($owner, ['status' => 'published']);
+
+        $this->actingAs($owner)
+            ->post(route('proposals.send.store', $proposal), [
+                'sponsor_ids' => [$company->id, $company->id],
+            ])
+            ->assertSessionHasErrors();
+
+        $this->assertSame(0, TrackingPipeline::count());
+    }
+
     /**
      * @param  array<string, mixed>  $attributes
      */

@@ -8,7 +8,7 @@ import {
     Megaphone,
     ScanText,
 } from '@lucide/vue';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
 import {
     Dialog,
@@ -41,9 +41,11 @@ const props = withDefaults(
         pdfMaxKb?: number;
     }>(),
     {
-        pdfMaxKb: 5120,
+        pdfMaxKb: 30720,
     },
 );
+
+const pdfMaxMb = computed(() => Math.max(1, Math.round(props.pdfMaxKb / 1024)));
 
 const emit = defineEmits<{
     'update:open': [value: boolean];
@@ -56,6 +58,7 @@ const bannerName = ref<string | null>(null);
 const pdfFile = ref<File | null>(null);
 const pdfName = ref<string | null>(null);
 const pdfSize = ref<number>(0);
+const pdfError = ref<string | null>(null);
 const extracting = ref(false);
 const extractError = ref<string | null>(null);
 const extractedLabels = ref<string[]>([]);
@@ -101,6 +104,7 @@ function syncForm(): void {
     pdfFile.value = null;
     pdfName.value = null;
     pdfSize.value = 0;
+    pdfError.value = null;
     extractError.value = null;
     extractedLabels.value = [];
     extractedByAi.value = false;
@@ -179,9 +183,23 @@ function onPdfChange(event: Event): void {
     pdfFile.value = file;
     pdfName.value = file?.name ?? null;
     pdfSize.value = file?.size ?? 0;
+    pdfError.value = null;
     extractError.value = null;
     extractedLabels.value = [];
     extractedByAi.value = false;
+
+    if (!file) {
+        return;
+    }
+
+    if (file.type && file.type !== 'application/pdf') {
+        pdfError.value = 'File harus berupa PDF.';
+        return;
+    }
+
+    if (file.size > props.pdfMaxKb * 1024) {
+        pdfError.value = `Ukuran file ${formatBytes(file.size)} melebihi batas ${pdfMaxMb.value} MB.`;
+    }
 }
 
 function formatBytes(size: number): string {
@@ -267,6 +285,16 @@ async function extractFromPdf(): Promise<void> {
         return;
     }
 
+    if (pdfFile.value.type && pdfFile.value.type !== 'application/pdf') {
+        extractError.value = 'File harus berupa PDF.';
+        return;
+    }
+
+    if (pdfFile.value.size > props.pdfMaxKb * 1024) {
+        extractError.value = `Ukuran file ${formatBytes(pdfFile.value.size)} melebihi batas ${pdfMaxMb.value} MB.`;
+        return;
+    }
+
     extracting.value = true;
     extractError.value = null;
     extractedLabels.value = [];
@@ -314,7 +342,6 @@ async function extractFromPdf(): Promise<void> {
     }
 }
 
-
 function close(): void {
     emit('update:open', false);
     form.clearErrors();
@@ -339,7 +366,9 @@ function submit(): void {
     <Dialog :open="open" @update:open="emit('update:open', $event)">
         <DialogContent class="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
             <DialogHeader>
-                <DialogTitle class="flex items-center gap-2 text-lg font-semibold text-sm-navy">
+                <DialogTitle
+                    class="flex items-center gap-2 text-lg font-semibold text-sm-navy"
+                >
                     <Megaphone class="h-5 w-5 text-sm-red" />
                     {{ campaign ? 'Edit Campaign' : 'Buat Campaign' }}
                 </DialogTitle>
@@ -351,8 +380,28 @@ function submit(): void {
             </DialogHeader>
 
             <form class="space-y-4" @submit.prevent="submit">
+                <div
+                    v-if="Object.keys(form.errors).length > 0"
+                    class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700"
+                >
+                    <p class="flex items-center gap-1.5 font-semibold">
+                        <CircleAlert class="size-4 shrink-0" />
+                        Campaign belum bisa disimpan
+                    </p>
+                    <ul class="mt-1 list-disc space-y-0.5 pl-5">
+                        <li
+                            v-for="(message, field) in form.errors"
+                            :key="field"
+                        >
+                            {{ message }}
+                        </li>
+                    </ul>
+                </div>
+
                 <!-- ============ Upload PDF + ekstraksi AI (paling atas) ============ -->
-                <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50/70 p-3">
+                <div
+                    class="rounded-xl border border-dashed border-gray-300 bg-gray-50/70 p-3"
+                >
                     <div class="flex items-start gap-3">
                         <span
                             class="flex size-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-sm-red"
@@ -366,7 +415,9 @@ function submit(): void {
                             >
                                 Upload Campaign PDF
                             </label>
-                            <p class="mt-0.5 text-[11px] leading-relaxed text-sm-card/65">
+                            <p
+                                class="mt-0.5 text-[11px] leading-relaxed text-sm-card/65"
+                            >
                                 Unggah dokumen campaign, lalu klik
                                 <strong>Ekstrak dengan AI</strong> — nama,
                                 deskripsi, tujuan, kategori, audiens, anggaran,
@@ -392,9 +443,17 @@ function submit(): void {
                                 </span>
                             </p>
 
+                            <p
+                                v-if="pdfError"
+                                class="mt-1.5 flex items-start gap-1 rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] leading-relaxed text-red-700"
+                            >
+                                <CircleAlert class="mt-px size-3.5 shrink-0" />
+                                {{ pdfError }}
+                            </p>
+
                             <button
                                 type="button"
-                                :disabled="!pdfFile || extracting"
+                                :disabled="!pdfFile || extracting || !!pdfError"
                                 class="mt-2 flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-sm-navy/20 bg-white px-3 text-[12px] font-medium text-sm-navy transition-colors hover:border-sm-navy/40 hover:bg-sm-navy/5 disabled:cursor-not-allowed disabled:opacity-50"
                                 @click="extractFromPdf"
                             >
@@ -422,9 +481,8 @@ function submit(): void {
                                     <template v-if="extractedByAi">
                                         Hasil ekstraksi AI ·
                                     </template>
-                                    {{ extractedLabels.length }} bagian
-                                    terisi otomatis. Periksa lagi sebelum
-                                    menyimpan.
+                                    {{ extractedLabels.length }} bagian terisi
+                                    otomatis. Periksa lagi sebelum menyimpan.
                                 </p>
                                 <div class="mt-1 flex flex-wrap gap-1">
                                     <span
@@ -441,9 +499,7 @@ function submit(): void {
                                 v-if="extractError"
                                 class="mt-2 flex items-start gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] leading-relaxed text-amber-700"
                             >
-                                <CircleAlert
-                                    class="mt-px size-3.5 shrink-0"
-                                />
+                                <CircleAlert class="mt-px size-3.5 shrink-0" />
                                 {{ extractError }}
                             </p>
 
@@ -451,8 +507,7 @@ function submit(): void {
                                 class="mt-1.5 flex items-center gap-1 text-[10px] text-sm-card/50"
                             >
                                 <ScanText class="size-3" />
-                                Maks. {{ Math.round(pdfMaxKb / 1024) }} MB ·
-                                PDF saja
+                                Maks. {{ pdfMaxMb }} MB · PDF saja
                             </p>
                         </div>
                     </div>
@@ -467,7 +522,7 @@ function submit(): void {
                     </div>
                     <div class="relative flex justify-center">
                         <span
-                            class="bg-white px-2 text-[10px] font-medium uppercase tracking-wide text-gray-400"
+                            class="bg-white px-2 text-[10px] font-medium tracking-wide text-gray-400 uppercase"
                         >
                             atau isi manual
                         </span>
@@ -475,7 +530,10 @@ function submit(): void {
                 </div>
 
                 <div>
-                    <label for="campaign-title" class="mb-1 block text-xs font-semibold text-sm-navy">
+                    <label
+                        for="campaign-title"
+                        class="mb-1 block text-xs font-semibold text-sm-navy"
+                    >
                         Nama campaign <span class="text-sm-red">*</span>
                     </label>
                     <input
@@ -490,7 +548,10 @@ function submit(): void {
                 </div>
 
                 <div>
-                    <label for="campaign-description" class="mb-1 block text-xs font-semibold text-sm-navy">
+                    <label
+                        for="campaign-description"
+                        class="mb-1 block text-xs font-semibold text-sm-navy"
+                    >
                         Deskripsi <span class="text-sm-red">*</span>
                     </label>
                     <textarea
@@ -501,12 +562,18 @@ function submit(): void {
                         :class="textareaClass"
                         placeholder="Jelaskan campaign dan peluang kolaborasinya"
                     ></textarea>
-                    <InputError :message="form.errors.description" class="mt-1" />
+                    <InputError
+                        :message="form.errors.description"
+                        class="mt-1"
+                    />
                 </div>
 
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
-                        <label for="campaign-category" class="mb-1 block text-xs font-semibold text-sm-navy">
+                        <label
+                            for="campaign-category"
+                            class="mb-1 block text-xs font-semibold text-sm-navy"
+                        >
                             Kategori event <span class="text-sm-red">*</span>
                         </label>
                         <select
@@ -523,11 +590,17 @@ function submit(): void {
                                 {{ category.name }}
                             </option>
                         </select>
-                        <InputError :message="form.errors.idKategori" class="mt-1" />
+                        <InputError
+                            :message="form.errors.idKategori"
+                            class="mt-1"
+                        />
                     </div>
 
                     <div>
-                        <label for="campaign-audience" class="mb-1 block text-xs font-semibold text-sm-navy">
+                        <label
+                            for="campaign-audience"
+                            class="mb-1 block text-xs font-semibold text-sm-navy"
+                        >
                             Target audiens
                         </label>
                         <input
@@ -538,11 +611,17 @@ function submit(): void {
                             :class="inputClass"
                             placeholder="Gen Z, penggemar musik"
                         />
-                        <InputError :message="form.errors.target_audience" class="mt-1" />
+                        <InputError
+                            :message="form.errors.target_audience"
+                            class="mt-1"
+                        />
                     </div>
 
                     <div class="sm:col-span-2">
-                        <label for="campaign-purpose" class="mb-1 block text-xs font-semibold text-sm-navy">
+                        <label
+                            for="campaign-purpose"
+                            class="mb-1 block text-xs font-semibold text-sm-navy"
+                        >
                             Tujuan campaign
                         </label>
                         <textarea
@@ -553,11 +632,17 @@ function submit(): void {
                             :class="textareaClass"
                             placeholder="Apa yang ingin dicapai dari campaign ini?"
                         ></textarea>
-                        <InputError :message="form.errors.purpose" class="mt-1" />
+                        <InputError
+                            :message="form.errors.purpose"
+                            class="mt-1"
+                        />
                     </div>
 
                     <div>
-                        <label for="campaign-budget-min" class="mb-1 block text-xs font-semibold text-sm-navy">
+                        <label
+                            for="campaign-budget-min"
+                            class="mb-1 block text-xs font-semibold text-sm-navy"
+                        >
                             Anggaran minimum <span class="text-sm-red">*</span>
                         </label>
                         <input
@@ -568,11 +653,17 @@ function submit(): void {
                             :class="inputClass"
                             placeholder="40000000"
                         />
-                        <InputError :message="form.errors.budgetMin" class="mt-1" />
+                        <InputError
+                            :message="form.errors.budgetMin"
+                            class="mt-1"
+                        />
                     </div>
 
                     <div>
-                        <label for="campaign-budget-max" class="mb-1 block text-xs font-semibold text-sm-navy">
+                        <label
+                            for="campaign-budget-max"
+                            class="mb-1 block text-xs font-semibold text-sm-navy"
+                        >
                             Anggaran maksimum <span class="text-sm-red">*</span>
                         </label>
                         <input
@@ -583,11 +674,17 @@ function submit(): void {
                             :class="inputClass"
                             placeholder="120000000"
                         />
-                        <InputError :message="form.errors.budgetMax" class="mt-1" />
+                        <InputError
+                            :message="form.errors.budgetMax"
+                            class="mt-1"
+                        />
                     </div>
 
                     <div>
-                        <label for="campaign-start" class="mb-1 block text-xs font-semibold text-sm-navy">
+                        <label
+                            for="campaign-start"
+                            class="mb-1 block text-xs font-semibold text-sm-navy"
+                        >
                             Tanggal mulai <span class="text-sm-red">*</span>
                         </label>
                         <input
@@ -596,11 +693,17 @@ function submit(): void {
                             type="date"
                             :class="inputClass"
                         />
-                        <InputError :message="form.errors.periodStart" class="mt-1" />
+                        <InputError
+                            :message="form.errors.periodStart"
+                            class="mt-1"
+                        />
                     </div>
 
                     <div>
-                        <label for="campaign-end" class="mb-1 block text-xs font-semibold text-sm-navy">
+                        <label
+                            for="campaign-end"
+                            class="mb-1 block text-xs font-semibold text-sm-navy"
+                        >
                             Tanggal berakhir <span class="text-sm-red">*</span>
                         </label>
                         <input
@@ -609,11 +712,17 @@ function submit(): void {
                             type="date"
                             :class="inputClass"
                         />
-                        <InputError :message="form.errors.periodEnd" class="mt-1" />
+                        <InputError
+                            :message="form.errors.periodEnd"
+                            class="mt-1"
+                        />
                     </div>
 
                     <div>
-                        <label for="campaign-support" class="mb-1 block text-xs font-semibold text-sm-navy">
+                        <label
+                            for="campaign-support"
+                            class="mb-1 block text-xs font-semibold text-sm-navy"
+                        >
                             Jenis dukungan
                         </label>
                         <input
@@ -624,11 +733,17 @@ function submit(): void {
                             :class="inputClass"
                             placeholder="Dana & sampling produk"
                         />
-                        <InputError :message="form.errors.supportType" class="mt-1" />
+                        <InputError
+                            :message="form.errors.supportType"
+                            class="mt-1"
+                        />
                     </div>
 
                     <div>
-                        <label for="campaign-participant" class="mb-1 block text-xs font-semibold text-sm-navy">
+                        <label
+                            for="campaign-participant"
+                            class="mb-1 block text-xs font-semibold text-sm-navy"
+                        >
                             Perkiraan peserta
                         </label>
                         <input
@@ -646,7 +761,10 @@ function submit(): void {
                     </div>
 
                     <div class="sm:col-span-2">
-                        <label for="campaign-benefits" class="mb-1 block text-xs font-semibold text-sm-navy">
+                        <label
+                            for="campaign-benefits"
+                            class="mb-1 block text-xs font-semibold text-sm-navy"
+                        >
                             Benefit untuk event
                         </label>
                         <textarea
@@ -657,11 +775,17 @@ function submit(): void {
                             :class="textareaClass"
                             placeholder="Apa yang didapat EO dari kolaborasi ini?"
                         ></textarea>
-                        <InputError :message="form.errors.benefits" class="mt-1" />
+                        <InputError
+                            :message="form.errors.benefits"
+                            class="mt-1"
+                        />
                     </div>
 
                     <div>
-                        <label for="campaign-status" class="mb-1 block text-xs font-semibold text-sm-navy">
+                        <label
+                            for="campaign-status"
+                            class="mb-1 block text-xs font-semibold text-sm-navy"
+                        >
                             Status
                         </label>
                         <select
@@ -676,11 +800,16 @@ function submit(): void {
                             Campaign aktif akan tampil sebagai peluang
                             sponsorship selama tanggal berakhir belum lewat.
                         </p>
-                        <InputError :message="form.errors.status" class="mt-1" />
+                        <InputError
+                            :message="form.errors.status"
+                            class="mt-1"
+                        />
                     </div>
 
                     <div>
-                        <label class="mb-1 block text-xs font-semibold text-sm-navy">
+                        <label
+                            class="mb-1 block text-xs font-semibold text-sm-navy"
+                        >
                             Banner campaign
                         </label>
                         <label
@@ -697,7 +826,8 @@ function submit(): void {
                                 class="flex flex-col items-center gap-1 text-[10px] text-sm-card/55"
                             >
                                 <ImagePlus class="h-5 w-5" />
-                                Pilih gambar (maks. {{ bannerConfig.max_kb }} KB)
+                                Pilih gambar (maks.
+                                {{ bannerConfig.max_kb }} KB)
                             </span>
                             <input
                                 type="file"
@@ -706,13 +836,19 @@ function submit(): void {
                                 @change="onBannerChange"
                             />
                         </label>
-                        <p v-if="bannerName" class="mt-1 truncate text-[10px] text-sm-card/60">
+                        <p
+                            v-if="bannerName"
+                            class="mt-1 truncate text-[10px] text-sm-card/60"
+                        >
                             {{ bannerName }}
                         </p>
                         <p v-else class="mt-1 text-[10px] text-sm-card/50">
                             Format: {{ bannerConfig.extensions.join(', ') }}
                         </p>
-                        <InputError :message="form.errors.banner" class="mt-1" />
+                        <InputError
+                            :message="form.errors.banner"
+                            class="mt-1"
+                        />
                     </div>
                 </div>
 
@@ -734,7 +870,13 @@ function submit(): void {
                             v-if="form.processing"
                             class="h-4 w-4 animate-spin"
                         />
-                        {{ campaign ? 'Simpan Perubahan' : 'Buat Campaign' }}
+                        {{
+                            form.processing
+                                ? 'Menyimpan...'
+                                : campaign
+                                  ? 'Simpan Perubahan'
+                                  : 'Buat Campaign'
+                        }}
                     </button>
                 </DialogFooter>
             </form>

@@ -16,11 +16,23 @@ withDefaults(defineProps<Props>(), {
 </script>
 
 <template>
-    <AppShell variant="sidebar">
+    <AppShell variant="sidebar" class="h-svh overflow-hidden">
         <AppSidebar />
-        <AppContent variant="sidebar" class="min-w-0 overflow-x-clip">
+        <AppContent variant="sidebar" class="h-svh min-w-0 overflow-hidden">
             <AppSidebarHeader :breadcrumbs="breadcrumbs" />
-            <slot />
+            <!--
+                Area konten dibuat sebagai satu-satunya scroll container.
+                Header berada di luar area ini sehingga search bar selalu
+                menempel di atas dan tidak ikut bergeser saat halaman
+                di-scroll. Atribut `scroll-region` membuat Inertia tetap
+                bisa memulihkan posisi scroll saat partial reload.
+            -->
+            <div
+                scroll-region
+                class="min-h-0 flex-1 overflow-x-clip overflow-y-auto"
+            >
+                <slot />
+            </div>
         </AppContent>
         <Toaster />
     </AppShell>

@@ -40,14 +40,21 @@ defineProps<{
                 class="mt-8 w-full rounded-[24px] border-[5px] border-[#384358] bg-[linear-gradient(180deg,#384358_0%,#232D46_8%,#192134_100%)] p-[34px]"
             >
                 <h2 class="text-center text-[28px] font-bold">{{ title }}</h2>
-                <p class="mt-2 text-center text-base leading-[30px] text-white/80">{{ subtitle }}</p>
+                <p
+                    class="mt-2 text-center text-base leading-[30px] text-white/80"
+                >
+                    {{ subtitle }}
+                </p>
 
                 <!-- Field-field khusus peran -->
                 <slot />
 
                 <p class="mt-6 text-center text-sm text-white/80">
                     Sudah punya akun?
-                    <Link :href="loginHref ?? '/login'" class="text-sm-peach underline-offset-2 hover:underline">
+                    <Link
+                        :href="loginHref ?? '/login'"
+                        class="text-sm-peach underline-offset-2 hover:underline"
+                    >
                         Masuk
                     </Link>
                 </p>

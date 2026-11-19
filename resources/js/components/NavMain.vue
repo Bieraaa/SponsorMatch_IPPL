@@ -81,7 +81,10 @@ const rowHeight = (index: number) =>
                             :title="`${item.title} — segera hadir`"
                             @click.prevent
                         >
-                            <component :is="item.icon" class="size-6 shrink-0" />
+                            <component
+                                :is="item.icon"
+                                class="size-6 shrink-0"
+                            />
                             <span :class="labelCls">{{ item.title }}</span>
                             <span :class="dividerCls" aria-hidden="true" />
                         </a>
@@ -90,7 +93,10 @@ const rowHeight = (index: number) =>
                             :href="item.href"
                             :class="[rowCls, rowHeight(index)]"
                         >
-                            <component :is="item.icon" class="size-6 shrink-0" />
+                            <component
+                                :is="item.icon"
+                                class="size-6 shrink-0"
+                            />
                             <span :class="labelCls">{{ item.title }}</span>
                             <span
                                 v-if="isCurrentUrl(item.href)"
@@ -112,9 +118,7 @@ const rowHeight = (index: number) =>
         </nav>
 
         <!-- Pengaturan & Bantuan: di bawah kontainer, tanpa bingkai/garis -->
-        <div
-            class="mx-1 mt-1 flex flex-col group-data-[collapsible=icon]:mx-0"
-        >
+        <div class="mx-1 mt-1 flex flex-col group-data-[collapsible=icon]:mx-0">
             <template v-for="item in utilityItems ?? []" :key="item.title">
                 <Tooltip>
                     <TooltipTrigger as-child>
@@ -125,7 +129,10 @@ const rowHeight = (index: number) =>
                             :title="`${item.title} — segera hadir`"
                             @click.prevent
                         >
-                            <component :is="item.icon" class="size-6 shrink-0" />
+                            <component
+                                :is="item.icon"
+                                class="size-6 shrink-0"
+                            />
                             <span :class="labelCls">{{ item.title }}</span>
                         </a>
                         <Link
@@ -133,7 +140,10 @@ const rowHeight = (index: number) =>
                             :href="item.href"
                             :class="[rowCls, 'h-[30px]']"
                         >
-                            <component :is="item.icon" class="size-6 shrink-0" />
+                            <component
+                                :is="item.icon"
+                                class="size-6 shrink-0"
+                            />
                             <span :class="labelCls">{{ item.title }}</span>
                             <span
                                 v-if="isCurrentUrl(item.href)"

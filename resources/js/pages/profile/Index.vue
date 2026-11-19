@@ -305,16 +305,16 @@ const inputClass =
 <template>
     <Head title="Profil" />
 
-    <div class="min-h-full bg-[#F6F7FA] pb-12">
-        <div class="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6 lg:px-8">
+    <div class="min-h-full bg-[#F7F8FA] pb-12">
+        <div class="mx-auto w-full max-w-[1180px] px-4 py-6 xl:px-0">
             <!-- ===================== Header ===================== -->
             <header class="mb-6">
                 <h1
-                    class="text-3xl font-bold tracking-tight text-sm-navy sm:text-4xl"
+                    class="text-2xl leading-tight font-semibold text-sm-navy lg:text-[30px]"
                 >
                     Profil
                 </h1>
-                <p class="mt-1 text-sm text-sm-card/70 sm:text-base">
+                <p class="mt-2 max-w-2xl text-sm text-sm-card/70">
                     Kelola informasi profil kamu
                 </p>
             </header>
@@ -605,7 +605,7 @@ const inputClass =
                                     readonly
                                     aria-readonly="true"
                                     aria-describedby="email-hint"
-                                    class="h-11 cursor-not-allowed rounded-lg border-gray-300 bg-white px-3 pr-10 text-sm text-sm-navy focus-visible:border-gray-300  dark:bg-white focus-visible:ring-0"
+                                    class="h-11 cursor-not-allowed rounded-lg border-gray-300 bg-white px-3 pr-10 text-sm text-sm-navy focus-visible:border-gray-300 focus-visible:ring-0 dark:bg-white"
                                 />
                                 <Lock
                                     class="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-gray-400"
@@ -717,10 +717,7 @@ const inputClass =
                     </div>
                 </div>
 
-                <div
-                    v-if="reviews.length > 0"
-                    class="divide-y divide-gray-100"
-                >
+                <div v-if="reviews.length > 0" class="divide-y divide-gray-100">
                     <article
                         v-for="review in reviews"
                         :key="review.id"
@@ -753,7 +750,9 @@ const inputClass =
                                         >
                                             {{ review.reviewerName }}
                                         </p>
-                                        <p class="mt-0.5 text-xs text-sm-card/60">
+                                        <p
+                                            class="mt-0.5 text-xs text-sm-card/60"
+                                        >
                                             <span v-if="review.reviewerRole">
                                                 {{ review.reviewerRole }}
                                             </span>

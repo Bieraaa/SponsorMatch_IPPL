@@ -128,6 +128,10 @@ class ProposalController extends Controller
                 'perPage' => $perPage,
                 'kategori' => $request->query('kategori') ? (int) $request->query('kategori') : null,
             ],
+            'pdfConfig' => [
+                'max_kb' => (int) config('sponsormatch.pdf.max_kb', 30720),
+                'max_mb' => (int) round((int) config('sponsormatch.pdf.max_kb', 30720) / 1024),
+            ],
         ]);
     }
 
@@ -141,13 +145,20 @@ class ProposalController extends Controller
      */
     public function extract(Request $request, PdfExtractionService $extractor): JsonResponse
     {
+        $maxKb = (int) config('sponsormatch.pdf.max_kb', 30720);
+        $maxMb = (int) round($maxKb / 1024);
+
         $request->validate([
             'file' => [
                 'required',
                 'file',
                 'mimes:pdf',
-                'max:'.(int) config('sponsormatch.pdf.max_kb', 5120),
+                'max:'.$maxKb,
             ],
+        ], [
+            'file.required' => 'Pilih file PDF proposal terlebih dahulu.',
+            'file.mimes' => 'Dokumen proposal harus berupa file PDF.',
+            'file.max' => 'Ukuran PDF maksimal '.$maxMb.' MB.',
         ]);
 
         try {
@@ -265,8 +276,8 @@ class ProposalController extends Controller
         }
 
         $validated = $request->validate([
-            'sponsor_ids' => ['required', 'array', 'min:1'],
-            'sponsor_ids.*' => ['integer', 'exists:users,id'],
+            'sponsor_ids' => ['required', 'array', 'min:1', 'max:50'],
+            'sponsor_ids.*' => ['integer', 'distinct', 'exists:users,id'],
             // Campaign OPSIONAL. NULL berarti dikirim langsung ke perusahaan.
             'campaign_id' => ['nullable', 'integer', 'exists:campaign,idCampaign'],
             'message' => ['nullable', 'string', 'max:1000'],
@@ -357,17 +368,30 @@ class ProposalController extends Controller
             }
         });
 
-        $target = User::query()
+        $targets = User::query()
             ->with('companyProfile')
-            ->find($sponsors[0]);
+            ->whereIn('id', $sponsors)
+            ->get()
+            ->map(fn (User $company) => $company->companyProfile?->companyName ?? $company->name)
+            ->values();
 
-        $targetName = $target?->companyProfile?->companyName ?? $target?->name ?? 'perusahaan';
+        $targetName = $targets->first() ?? 'perusahaan';
+
+        if ($targets->count() > 1) {
+            $listed = $targets->take(3)->implode(', ');
+            $remaining = $targets->count() - 3;
+
+            $message = "Proposal berhasil dikirim ke {$targets->count()} perusahaan: {$listed}"
+                .($remaining > 0 ? " dan {$remaining} perusahaan lain." : '.');
+        } else {
+            $message = $campaign !== null
+                ? "Proposal berhasil dikirim ke {$targetName} untuk campaign {$campaign->title}."
+                : "Proposal berhasil dikirim ke {$targetName}.";
+        }
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => $campaign !== null
-                ? "Proposal berhasil dikirim ke {$targetName} untuk campaign {$campaign->title}."
-                : 'Proposal berhasil dikirim ke '.$targetName.'.',
+            'message' => $message,
         ]);
 
         if (($validated['redirect'] ?? null) === 'recommendations') {
@@ -460,8 +484,13 @@ class ProposalController extends Controller
                 'nullable',
                 'file',
                 'mimes:pdf',
-                'max:'.(int) config('sponsormatch.pdf.max_kb', 5120),
+                'max:'.(int) config('sponsormatch.pdf.max_kb', 30720),
             ],
+        ], [
+            'file.mimes' => 'Dokumen proposal harus berupa file PDF.',
+            'file.max' => 'Ukuran PDF maksimal '
+                .(int) round((int) config('sponsormatch.pdf.max_kb', 30720) / 1024)
+                .' MB.',
         ]);
 
         $filePath = '';

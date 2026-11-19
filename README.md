@@ -1,6 +1,6 @@
 # SponsorMatch
 
-**SponsorMatch** adalah aplikasi berbasis web yang membantu *Event Organizer* (EO) mencari dan mengelola sponsor. Aplikasi ini mempermudah pencarian mitra sponsor yang tepat, pengelolaan proposal, serta negosiasi kerja sama sponsorship, dilengkapi dengan rekomendasi berbasis AI untuk mencocokkan EO dengan sponsor yang relevan.
+**SponsorMatch** adalah aplikasi berbasis web yang membantu _Event Organizer_ (EO) mencari dan mengelola sponsor. Aplikasi ini mempermudah pencarian mitra sponsor yang tepat, pengelolaan proposal, serta negosiasi kerja sama sponsorship, dilengkapi dengan rekomendasi berbasis AI untuk mencocokkan EO dengan sponsor yang relevan.
 
 ## Fitur Utama
 

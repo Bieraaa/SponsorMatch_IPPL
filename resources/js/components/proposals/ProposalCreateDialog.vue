@@ -1,10 +1,22 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
-import { CalendarDays, CircleAlert, FileUp, LoaderCircle, ScanText } from '@lucide/vue';
-import { reactive, ref, watch } from 'vue';
+import {
+    CalendarDays,
+    CircleAlert,
+    FileUp,
+    LoaderCircle,
+    ScanText,
+} from '@lucide/vue';
+import { computed, reactive, ref, watch } from 'vue';
 import ProposalController from '@/actions/App/Http/Controllers/ProposalController';
 import InputError from '@/components/InputError.vue';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import type { ProposalKategori } from '@/types/proposal';
 
 /**
@@ -27,10 +39,18 @@ import type { ProposalKategori } from '@/types/proposal';
  * bisa langsung mengisi field, tapi tetap dikirim lewat <Form> Inertia yang
  * menyerialkan elemen form berdasarkan atribut `name`.
  */
-const props = defineProps<{
-    kategori: ProposalKategori[];
-    open: boolean;
-}>();
+const props = withDefaults(
+    defineProps<{
+        kategori: ProposalKategori[];
+        open: boolean;
+        pdfMaxKb?: number;
+    }>(),
+    {
+        pdfMaxKb: 30720,
+    },
+);
+
+const pdfMaxMb = computed(() => Math.max(1, Math.round(props.pdfMaxKb / 1024)));
 
 const emit = defineEmits<{
     'update:open': [value: boolean];
@@ -90,12 +110,15 @@ const formKey = ref(0);
 
 /** Berkas yang sedang dipilih (untuk menampilkan nama + ukuran). */
 const selectedFile = ref<{ name: string; size: number } | null>(null);
+const fileError = ref<string | null>(null);
 
 /** Status tombol ekstrak. */
 const extracting = ref(false);
 const extractError = ref<string | null>(null);
 const extractedLabels = ref<string[]>([]);
 const extractedByAi = ref(false);
+
+const fileInvalid = computed(() => fileError.value !== null);
 
 watch(
     () => props.open,
@@ -106,6 +129,7 @@ watch(
 
         Object.assign(form, emptyForm());
         selectedFile.value = null;
+        fileError.value = null;
         extractError.value = null;
         extractedLabels.value = [];
         extractedByAi.value = false;
@@ -118,8 +142,22 @@ function onFileChange(event: Event): void {
     const file = input.files?.[0] ?? null;
 
     selectedFile.value = file ? { name: file.name, size: file.size } : null;
+    fileError.value = null;
     extractError.value = null;
     extractedLabels.value = [];
+
+    if (!file) {
+        return;
+    }
+
+    if (file.type && file.type !== 'application/pdf') {
+        fileError.value = 'File harus berupa PDF.';
+        return;
+    }
+
+    if (file.size > props.pdfMaxKb * 1024) {
+        fileError.value = `Ukuran file ${formatBytes(file.size)} melebihi batas ${pdfMaxMb.value} MB.`;
+    }
 }
 
 function formatBytes(size: number): string {
@@ -234,10 +272,21 @@ function applyExtracted(fields: ExtractResponse['fields']): void {
  * File TIDAK disimpan di sini — penyimpanan tetap lewat submit form.
  */
 async function extractFromPdf(): Promise<void> {
-    const file = (document.getElementById('file') as HTMLInputElement | null)?.files?.[0];
+    const file = (document.getElementById('file') as HTMLInputElement | null)
+        ?.files?.[0];
 
     if (!file) {
         extractError.value = 'Pilih dokumen PDF terlebih dahulu.';
+        return;
+    }
+
+    if (file.type && file.type !== 'application/pdf') {
+        extractError.value = 'File harus berupa PDF.';
+        return;
+    }
+
+    if (file.size > props.pdfMaxKb * 1024) {
+        extractError.value = `Ukuran file ${formatBytes(file.size)} melebihi batas ${pdfMaxMb.value} MB.`;
         return;
     }
 
@@ -261,7 +310,8 @@ async function extractFromPdf(): Promise<void> {
         });
 
         if (response.status === 419) {
-            extractError.value = 'Sesi kamu sudah berakhir. Muat ulang halaman lalu coba lagi.';
+            extractError.value =
+                'Sesi kamu sudah berakhir. Muat ulang halaman lalu coba lagi.';
             return;
         }
 
@@ -270,7 +320,9 @@ async function extractFromPdf(): Promise<void> {
             | null;
 
         if (!response.ok) {
-            extractError.value = payload?.message ?? 'Ekstraksi gagal. Coba lagi atau isi manual.';
+            extractError.value =
+                payload?.message ??
+                'Ekstraksi gagal. Coba lagi atau isi manual.';
             return;
         }
 
@@ -278,7 +330,8 @@ async function extractFromPdf(): Promise<void> {
         extractedLabels.value = payload?.filled ?? [];
         extractedByAi.value = payload?.source === 'gemini';
     } catch {
-        extractError.value = 'Tidak bisa menghubungi server. Periksa koneksimu lalu coba lagi.';
+        extractError.value =
+            'Tidak bisa menghubungi server. Periksa koneksimu lalu coba lagi.';
     } finally {
         extracting.value = false;
     }
@@ -287,12 +340,16 @@ async function extractFromPdf(): Promise<void> {
 
 <template>
     <Dialog :open="open" @update:open="emit('update:open', $event)">
-        <DialogContent class="max-h-[90vh] overflow-y-auto bg-white text-sm-navy sm:max-w-2xl">
+        <DialogContent
+            class="max-h-[90vh] overflow-y-auto bg-white text-sm-navy sm:max-w-2xl"
+        >
             <DialogHeader>
-                <DialogTitle class="text-base font-semibold text-sm-navy">Tambah Proposal</DialogTitle>
+                <DialogTitle class="text-base font-semibold text-sm-navy"
+                    >Tambah Proposal</DialogTitle
+                >
                 <DialogDescription class="text-xs text-gray-500">
-                    Proposal baru disimpan sebagai <strong>Draft</strong>. Kamu bisa mengirimnya ke sponsor
-                    setelah dokumennya siap.
+                    Proposal baru disimpan sebagai <strong>Draft</strong>. Kamu
+                    bisa mengirimnya ke sponsor setelah dokumennya siap.
                 </DialogDescription>
             </DialogHeader>
 
@@ -304,10 +361,27 @@ async function extractFromPdf(): Promise<void> {
                 :options="{ preserveScroll: true }"
                 @success="emit('update:open', false)"
             >
+                <div
+                    v-if="Object.keys(errors).length > 0"
+                    class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700"
+                >
+                    <p class="flex items-center gap-1.5 font-semibold">
+                        <CircleAlert class="size-4 shrink-0" />
+                        Proposal belum bisa disimpan
+                    </p>
+                    <ul class="mt-1 list-disc space-y-0.5 pl-5">
+                        <li v-for="(message, field) in errors" :key="field">
+                            {{ message }}
+                        </li>
+                    </ul>
+                </div>
+
                 <!-- ================= Unggah PDF + ekstraksi (paling atas) =================
                      Ditaruh pertama: PDF adalah sumber isian, form manual di bawah
                      hanya untuk melengkapi/mengoreksi hasil ekstraksi. -->
-                <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50/70 p-3">
+                <div
+                    class="rounded-xl border border-dashed border-gray-300 bg-gray-50/70 p-3"
+                >
                     <div class="flex items-start gap-3">
                         <span
                             class="flex size-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-sm-red"
@@ -315,12 +389,19 @@ async function extractFromPdf(): Promise<void> {
                             <FileUp class="size-5" :stroke-width="2" />
                         </span>
                         <div class="min-w-0 flex-1">
-                            <label for="file" class="block text-[13px] font-medium text-sm-navy">
+                            <label
+                                for="file"
+                                class="block text-[13px] font-medium text-sm-navy"
+                            >
                                 Dokumen proposal (PDF)
                             </label>
-                            <p class="mt-0.5 text-[11px] leading-relaxed text-gray-500">
-                                Unggah proposal, lalu klik <strong>Ekstrak dari PDF</strong> — judul, kategori,
-                                lokasi, anggaran, tanggal, dan deskripsi akan terisi otomatis.
+                            <p
+                                class="mt-0.5 text-[11px] leading-relaxed text-gray-500"
+                            >
+                                Unggah proposal, lalu klik
+                                <strong>Ekstrak dari PDF</strong> — judul,
+                                kategori, lokasi, anggaran, tanggal, dan
+                                deskripsi akan terisi otomatis.
                             </p>
 
                             <input
@@ -332,22 +413,47 @@ async function extractFromPdf(): Promise<void> {
                                 @change="onFileChange"
                             />
 
-                            <div v-if="selectedFile" class="mt-1.5 flex items-center gap-1 text-[11px] text-emerald-600">
+                            <div
+                                v-if="selectedFile"
+                                class="mt-1.5 flex items-center gap-1 text-[11px] text-emerald-600"
+                            >
                                 <FileUp class="size-3.5 shrink-0" />
-                                <span class="truncate">{{ selectedFile.name }}</span>
-                                <span class="shrink-0 text-emerald-600/70">· {{ formatBytes(selectedFile.size) }}</span>
+                                <span class="truncate">{{
+                                    selectedFile.name
+                                }}</span>
+                                <span class="shrink-0 text-emerald-600/70"
+                                    >·
+                                    {{ formatBytes(selectedFile.size) }}</span
+                                >
                             </div>
+
+                            <p
+                                v-if="fileError"
+                                class="mt-1.5 flex items-start gap-1 rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] leading-relaxed text-red-700"
+                            >
+                                <CircleAlert class="mt-px size-3.5 shrink-0" />
+                                {{ fileError }}
+                            </p>
 
                             <button
                                 type="button"
-                                :disabled="!selectedFile || extracting"
+                                :disabled="
+                                    !selectedFile || extracting || fileInvalid
+                                "
                                 class="mt-2 flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-sm-navy/20 bg-white px-3 text-[12px] font-medium text-sm-navy transition-colors hover:border-sm-navy/40 hover:bg-sm-navy/5 disabled:cursor-not-allowed disabled:opacity-50"
                                 @click="extractFromPdf"
                             >
-                                <LoaderCircle v-if="extracting" class="size-3.5 animate-spin" />
+                                <LoaderCircle
+                                    v-if="extracting"
+                                    class="size-3.5 animate-spin"
+                                />
                                 <ScanText v-else class="size-3.5" />
-                                <template v-if="extracting">Membaca dokumen...</template>
-                                <template v-else-if="!selectedFile">Pilih PDF dulu untuk ekstrak</template>
+                                <template v-if="extracting"
+                                    >Membaca dokumen...</template
+                                >
+                                <template v-else-if="!selectedFile"
+                                    >Pilih PDF dulu untuk ekstrak</template
+                                >
                                 <template v-else>Ekstrak dari PDF</template>
                             </button>
 
@@ -356,9 +462,14 @@ async function extractFromPdf(): Promise<void> {
                                 v-if="extractedLabels.length"
                                 class="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1.5"
                             >
-                                <p class="text-[11px] font-medium text-emerald-700">
-                                    <template v-if="extractedByAi">Hasil ekstraksi AI · </template>
-                                    {{ extractedLabels.length }} bagian terisi otomatis. Periksa lagi sebelum menyimpan.
+                                <p
+                                    class="text-[11px] font-medium text-emerald-700"
+                                >
+                                    <template v-if="extractedByAi"
+                                        >Hasil ekstraksi AI ·
+                                    </template>
+                                    {{ extractedLabels.length }} bagian terisi
+                                    otomatis. Periksa lagi sebelum menyimpan.
                                 </p>
                                 <div class="mt-1 flex flex-wrap gap-1">
                                     <span
@@ -380,9 +491,11 @@ async function extractFromPdf(): Promise<void> {
                                 {{ extractError }}
                             </p>
 
-                            <p class="mt-1.5 flex items-center gap-1 text-[10px] text-gray-400">
+                            <p
+                                class="mt-1.5 flex items-center gap-1 text-[10px] text-gray-400"
+                            >
                                 <ScanText class="size-3" />
-                                Maks. 5 MB · PDF berbasis teks (bukan hasil scan)
+                                Maks. {{ pdfMaxMb }} MB · PDF saja
                             </p>
 
                             <InputError :message="errors.file" class="mt-1" />
@@ -392,11 +505,16 @@ async function extractFromPdf(): Promise<void> {
 
                 <!-- Pemisah: dokumen di atas, isian manual di bawah -->
                 <div class="relative">
-                    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                    <div
+                        class="absolute inset-0 flex items-center"
+                        aria-hidden="true"
+                    >
                         <span class="w-full border-t border-gray-100"></span>
                     </div>
                     <div class="relative flex justify-center">
-                        <span class="bg-white px-2 text-[10px] font-medium uppercase tracking-wide text-gray-400">
+                        <span
+                            class="bg-white px-2 text-[10px] font-medium tracking-wide text-gray-400 uppercase"
+                        >
                             atau isi manual
                         </span>
                     </div>
@@ -404,7 +522,10 @@ async function extractFromPdf(): Promise<void> {
 
                 <div class="grid gap-3 sm:grid-cols-2">
                     <div class="sm:col-span-2">
-                        <label for="title" class="mb-1 block text-xs font-medium text-gray-600">
+                        <label
+                            for="title"
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
                             Judul proposal <span class="text-sm-red">*</span>
                         </label>
                         <input
@@ -420,12 +541,25 @@ async function extractFromPdf(): Promise<void> {
                     </div>
 
                     <div>
-                        <label for="idKategori" class="mb-1 block text-xs font-medium text-gray-600">
+                        <label
+                            for="idKategori"
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
                             Kategori event <span class="text-sm-red">*</span>
                         </label>
-                        <select id="idKategori" v-model="form.idKategori" name="idKategori" required :class="inputClass">
+                        <select
+                            id="idKategori"
+                            v-model="form.idKategori"
+                            name="idKategori"
+                            required
+                            :class="inputClass"
+                        >
                             <option value="" disabled>Pilih kategori</option>
-                            <option v-for="item in kategori" :key="item.id" :value="String(item.id)">
+                            <option
+                                v-for="item in kategori"
+                                :key="item.id"
+                                :value="String(item.id)"
+                            >
                                 {{ item.name }}
                             </option>
                         </select>
@@ -433,18 +567,37 @@ async function extractFromPdf(): Promise<void> {
                     </div>
 
                     <div>
-                        <label for="needType" class="mb-1 block text-xs font-medium text-gray-600">
+                        <label
+                            for="needType"
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
                             Jenis kebutuhan <span class="text-sm-red">*</span>
                         </label>
-                        <select id="needType" v-model="form.needType" name="needType" required :class="inputClass">
-                            <option v-for="type in needTypes" :key="type" :value="type">{{ type }}</option>
+                        <select
+                            id="needType"
+                            v-model="form.needType"
+                            name="needType"
+                            required
+                            :class="inputClass"
+                        >
+                            <option
+                                v-for="type in needTypes"
+                                :key="type"
+                                :value="type"
+                            >
+                                {{ type }}
+                            </option>
                         </select>
                         <InputError :message="errors.needType" class="mt-1" />
                     </div>
 
                     <div>
-                        <label for="budgetMin" class="mb-1 block text-xs font-medium text-gray-600">
-                            Anggaran minimum (Rp) <span class="text-sm-red">*</span>
+                        <label
+                            for="budgetMin"
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Anggaran minimum (Rp)
+                            <span class="text-sm-red">*</span>
                         </label>
                         <input
                             id="budgetMin"
@@ -458,13 +611,19 @@ async function extractFromPdf(): Promise<void> {
                             placeholder="25.000.000"
                             @input="onBudgetInput('budgetMin', $event)"
                         />
-                        <p class="mt-0.5 text-[10px] text-gray-400">Pemisah ribuan otomatis, contoh 25.000.000</p>
+                        <p class="mt-0.5 text-[10px] text-gray-400">
+                            Pemisah ribuan otomatis, contoh 25.000.000
+                        </p>
                         <InputError :message="errors.budgetMin" class="mt-1" />
                     </div>
 
                     <div>
-                        <label for="budgetMax" class="mb-1 block text-xs font-medium text-gray-600">
-                            Anggaran maksimum (Rp) <span class="text-sm-red">*</span>
+                        <label
+                            for="budgetMax"
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Anggaran maksimum (Rp)
+                            <span class="text-sm-red">*</span>
                         </label>
                         <input
                             id="budgetMax"
@@ -478,12 +637,17 @@ async function extractFromPdf(): Promise<void> {
                             placeholder="75.000.000"
                             @input="onBudgetInput('budgetMax', $event)"
                         />
-                        <p class="mt-0.5 text-[10px] text-gray-400">Tidak boleh lebih kecil dari anggaran minimum</p>
+                        <p class="mt-0.5 text-[10px] text-gray-400">
+                            Tidak boleh lebih kecil dari anggaran minimum
+                        </p>
                         <InputError :message="errors.budgetMax" class="mt-1" />
                     </div>
 
                     <div>
-                        <label for="start_date" class="mb-1 block text-xs font-medium text-gray-600">
+                        <label
+                            for="start_date"
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
                             Tanggal mulai <span class="text-sm-red">*</span>
                         </label>
                         <div class="relative">
@@ -493,7 +657,10 @@ async function extractFromPdf(): Promise<void> {
                                 name="start_date"
                                 type="date"
                                 required
-                                :class="[inputClass, 'cursor-pointer pr-9 [&::-webkit-calendar-picker-indicator]:hidden']"
+                                :class="[
+                                    inputClass,
+                                    'cursor-pointer pr-9 [&::-webkit-calendar-picker-indicator]:hidden',
+                                ]"
                                 @click="openDatePicker('start_date')"
                             />
                             <button
@@ -510,7 +677,10 @@ async function extractFromPdf(): Promise<void> {
                     </div>
 
                     <div>
-                        <label for="end_date" class="mb-1 block text-xs font-medium text-gray-600">
+                        <label
+                            for="end_date"
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
                             Tanggal selesai <span class="text-sm-red">*</span>
                         </label>
                         <div class="relative">
@@ -521,7 +691,10 @@ async function extractFromPdf(): Promise<void> {
                                 type="date"
                                 required
                                 :min="form.start_date || undefined"
-                                :class="[inputClass, 'cursor-pointer pr-9 [&::-webkit-calendar-picker-indicator]:hidden']"
+                                :class="[
+                                    inputClass,
+                                    'cursor-pointer pr-9 [&::-webkit-calendar-picker-indicator]:hidden',
+                                ]"
                                 @click="openDatePicker('end_date')"
                             />
                             <button
@@ -538,7 +711,10 @@ async function extractFromPdf(): Promise<void> {
                     </div>
 
                     <div class="sm:col-span-2">
-                        <label for="location" class="mb-1 block text-xs font-medium text-gray-600">
+                        <label
+                            for="location"
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
                             Lokasi event <span class="text-sm-red">*</span>
                         </label>
                         <input
@@ -554,7 +730,10 @@ async function extractFromPdf(): Promise<void> {
                     </div>
 
                     <div class="sm:col-span-2">
-                        <label for="target_audience" class="mb-1 block text-xs font-medium text-gray-600">
+                        <label
+                            for="target_audience"
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
                             Target audiens <span class="text-sm-red">*</span>
                         </label>
                         <textarea
@@ -566,12 +745,19 @@ async function extractFromPdf(): Promise<void> {
                             :class="textareaClass"
                             placeholder="Mahasiswa dan profesional muda 18-30 tahun"
                         ></textarea>
-                        <InputError :message="errors.target_audience" class="mt-1" />
+                        <InputError
+                            :message="errors.target_audience"
+                            class="mt-1"
+                        />
                     </div>
 
                     <div class="sm:col-span-2">
-                        <label for="desctiption" class="mb-1 block text-xs font-medium text-gray-600">
-                            Deskripsi proposal <span class="text-sm-red">*</span>
+                        <label
+                            for="desctiption"
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Deskripsi proposal
+                            <span class="text-sm-red">*</span>
                         </label>
                         <textarea
                             id="desctiption"
@@ -582,11 +768,17 @@ async function extractFromPdf(): Promise<void> {
                             :class="textareaClass"
                             placeholder="Jelaskan konsep acara dan peluang sponsorship..."
                         ></textarea>
-                        <InputError :message="errors.desctiption" class="mt-1" />
+                        <InputError
+                            :message="errors.desctiption"
+                            class="mt-1"
+                        />
                     </div>
 
                     <div class="sm:col-span-2">
-                        <label for="benefits" class="mb-1 block text-xs font-medium text-gray-600">
+                        <label
+                            for="benefits"
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
                             Benefit untuk sponsor
                         </label>
                         <textarea
@@ -601,7 +793,9 @@ async function extractFromPdf(): Promise<void> {
                     </div>
                 </div>
 
-                <div class="flex justify-end gap-2 border-t border-gray-100 pt-3">
+                <div
+                    class="flex justify-end gap-2 border-t border-gray-100 pt-3"
+                >
                     <button
                         type="button"
                         class="h-9 rounded-lg border border-gray-200 px-3 text-[13px] font-medium text-gray-600 transition-colors hover:bg-gray-50"
@@ -611,9 +805,13 @@ async function extractFromPdf(): Promise<void> {
                     </button>
                     <button
                         type="submit"
-                        :disabled="processing"
-                        class="h-9 rounded-lg bg-sm-red px-4 text-[13px] font-medium text-white transition-colors hover:bg-sm-red-dark disabled:opacity-60"
+                        :disabled="processing || fileInvalid"
+                        class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-sm-red px-4 text-[13px] font-medium text-white transition-colors hover:bg-sm-red-dark disabled:opacity-60"
                     >
+                        <LoaderCircle
+                            v-if="processing"
+                            class="size-3.5 animate-spin"
+                        />
                         {{ processing ? 'Menyimpan...' : 'Simpan Draft' }}
                     </button>
                 </div>

@@ -71,7 +71,22 @@ return [
     | bersama oleh backend dan area upload di frontend.
     */
     'pdf' => [
-        'max_kb' => (int) env('PDF_MAX_KB', 5120),
+        'max_kb' => (int) env('PDF_MAX_KB', 30720),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Gambar postingan
+    |--------------------------------------------------------------------------
+    | Dipakai bersama oleh PostController dan halaman Postingan. `max_kb`
+    | mengikuti satuan validasi `max` Laravel (kilobyte).
+    */
+    'post_image' => [
+        'disk' => 'public',
+        'max_kb' => (int) env('POST_IMAGE_MAX_KB', 4096),
+        'extensions' => ['jpg', 'jpeg', 'png', 'webp'],
+        'mimetypes' => ['image/jpeg', 'image/png', 'image/webp'],
+        'directory' => 'posts',
     ],
 
 ];

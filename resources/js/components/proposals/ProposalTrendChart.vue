@@ -79,7 +79,10 @@ function yAt(value: number): number {
 
 function points(values: number[]): string {
     return values
-        .map((value, index) => `${xAt(index).toFixed(2)},${yAt(value).toFixed(2)}`)
+        .map(
+            (value, index) =>
+                `${xAt(index).toFixed(2)},${yAt(value).toFixed(2)}`,
+        )
         .join(' ');
 }
 
@@ -175,8 +178,13 @@ function onLeave(): void {
             </span>
         </div>
 
-        <div v-if="total === 0" class="mt-6 flex h-48 items-center justify-center rounded-xl bg-gray-50">
-            <p class="text-sm text-gray-400">Belum ada data proposal pada periode ini.</p>
+        <div
+            v-if="total === 0"
+            class="mt-6 flex h-48 items-center justify-center rounded-xl bg-gray-50"
+        >
+            <p class="text-sm text-gray-400">
+                Belum ada data proposal pada periode ini.
+            </p>
         </div>
 
         <div v-else class="relative mt-3">
@@ -259,7 +267,14 @@ function onLeave(): void {
                         stroke-width="1"
                         stroke-dasharray="4 4"
                     />
-                    <circle :cx="hoverState.x" :cy="yAt(hoverState.sent)" r="4" fill="#2f64d1" stroke="#ffffff" stroke-width="2" />
+                    <circle
+                        :cx="hoverState.x"
+                        :cy="yAt(hoverState.sent)"
+                        r="4"
+                        fill="#2f64d1"
+                        stroke="#ffffff"
+                        stroke-width="2"
+                    />
                     <circle
                         :cx="hoverState.x"
                         :cy="yAt(hoverState.approved)"

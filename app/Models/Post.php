@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -49,6 +50,37 @@ class Post extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'idUser', 'id');
+    }
+
+    /**
+     * Postingan yang belum dihapus.
+     *
+     * Tabel `post` tidak memakai trait SoftDeletes; penghapusan ditandai
+     * dengan mengisi kolom `deleteAt`. Scope ini mencegah postingan yang
+     * sudah dihapus muncul kembali di feed, profil, maupun dashboard.
+     *
+     * @param  Builder<Post>  $query
+     * @return Builder<Post>
+     */
+    public function scopeVisible(Builder $query): Builder
+    {
+        return $query->whereNull('deleteAt');
+    }
+
+    /**
+     * Postingan milik satu akun.
+     *
+     * @param  Builder<Post>  $query
+     * @return Builder<Post>
+     */
+    public function scopeOwnedBy(Builder $query, User|int $user): Builder
+    {
+        return $query->where('idUser', $user instanceof User ? $user->getKey() : $user);
+    }
+
+    public function isOwnedBy(?User $user): bool
+    {
+        return $user !== null && (int) $this->idUser === (int) $user->getKey();
     }
 
     /**

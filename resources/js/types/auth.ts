@@ -12,6 +12,8 @@ export type User = {
     jabatan?: string | null;
     /** Nama badan usaha (khusus akun sponsor), diambil dari company_profiles. */
     company_name?: string | null;
+    /** Status langganan akun: 'Reguler' atau 'Subscription' (premium). */
+    status_subscription?: 'Reguler' | 'Subscription';
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
     created_at: string;

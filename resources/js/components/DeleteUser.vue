@@ -69,8 +69,8 @@ const canDelete = computed(() => props.activeCollaborationCount === 0);
                     role="alert"
                 >
                     Akun belum bisa dihapus: masih ada
-                    {{ activeCollaborationCount }} kerja sama aktif.
-                    Selesaikan semuanya terlebih dahulu.
+                    {{ activeCollaborationCount }} kerja sama aktif. Selesaikan
+                    semuanya terlebih dahulu.
                 </p>
             </div>
         </div>

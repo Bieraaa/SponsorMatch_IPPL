@@ -26,6 +26,8 @@ import { dashboard } from '@/routes';
 import { index as campaignsIndex } from '@/routes/company/campaigns';
 import { edit as companyProfileEdit } from '@/routes/company/profile';
 import { index as companyRecommendationsIndex } from '@/routes/company/recommendations';
+import { index as offersIndex } from '@/routes/offers';
+import { index as postsIndex } from '@/routes/posts';
 import { index as proposalsIndex } from '@/routes/proposals';
 import { index as recommendationsIndex } from '@/routes/recommendations';
 import { index as sponsorProposalsIndex } from '@/routes/sponsor/proposals';
@@ -44,9 +46,8 @@ import type { NavItem } from '@/types';
  *   tanpa bingkai. Detail class ada di NavMain.vue.
  * - Bagian bawah: avatar + nama + email (NavUser).
  *
- * Menu selain Dashboard & Pengaturan adalah fitur blok berikutnya,
- * jadi href '#' (NavMain merender <a> nonaktif untuk '#' — tidak ada
- * rute di Laravel untuk itu).
+ * Menu utama sudah terhubung ke rute masing-masing. Item `#` hanya
+ * dipakai bila ada fitur yang benar-benar belum tersedia.
  */
 const page = usePage();
 const isSponsor = computed(() => page.props.auth.user?.role === 'sponsor');
@@ -63,7 +64,11 @@ const isSponsor = computed(() => page.props.auth.user?.role === 'sponsor');
  */
 const proposalNavItem = computed<NavItem>(() =>
     isSponsor.value
-        ? { title: 'Proposal Masuk', href: sponsorProposalsIndex(), icon: FileText }
+        ? {
+              title: 'Proposal Masuk',
+              href: sponsorProposalsIndex(),
+              icon: FileText,
+          }
         : { title: 'Proposal Saya', href: proposalsIndex(), icon: FileText },
 );
 
@@ -87,10 +92,14 @@ const mainNavItems = computed<NavItem[]>(() => {
                 icon: Sparkles,
             },
             proposalNavItem.value,
-            { title: 'Penawaran', href: '#', icon: Handshake },
-            { title: 'Postingan', href: '#', icon: Newspaper },
-            { title: 'Riwayat Kolaborasi', href: '#', icon: History },
-            { title: 'Subscription', href: '#', icon: CreditCard },
+            { title: 'Penawaran', href: offersIndex(), icon: Handshake },
+            { title: 'Postingan', href: postsIndex(), icon: Newspaper },
+            {
+                title: 'Riwayat Kolaborasi',
+                href: '/collaborations',
+                icon: History,
+            },
+            { title: 'Langganan', href: '/billing', icon: CreditCard },
         ];
     }
 
@@ -102,16 +111,16 @@ const mainNavItems = computed<NavItem[]>(() => {
             icon: Sparkles,
         },
         proposalNavItem.value,
-        { title: 'Penawaran', href: '#', icon: Handshake },
-        { title: 'Postingan', href: '#', icon: Megaphone },
-        { title: 'Riwayat Kolaborasi', href: '#', icon: History },
-        { title: 'Subscription', href: '#', icon: CreditCard },
+        { title: 'Penawaran', href: offersIndex(), icon: Handshake },
+        { title: 'Postingan', href: postsIndex(), icon: Megaphone },
+        { title: 'Riwayat Kolaborasi', href: '/collaborations', icon: History },
+        { title: 'Langganan', href: '/billing', icon: CreditCard },
     ];
 });
 
 const utilityNavItems: NavItem[] = [
     { title: 'Pengaturan', href: edit(), icon: Settings },
-    { title: 'Bantuan', href: '#', icon: Headphones },
+    { title: 'Bantuan', href: '/bantuan', icon: Headphones },
 ];
 </script>
 
@@ -137,10 +146,7 @@ const utilityNavItems: NavItem[] = [
         </SidebarHeader>
 
         <SidebarContent class="mt-10">
-            <NavMain
-                :items="mainNavItems"
-                :utility-items="utilityNavItems"
-            />
+            <NavMain :items="mainNavItems" :utility-items="utilityNavItems" />
         </SidebarContent>
 
         <SidebarFooter>

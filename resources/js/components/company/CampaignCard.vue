@@ -36,7 +36,7 @@ const emit = defineEmits<{
 }>();
 
 const money = (value: number) =>
-    `Rp${value.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`;
+    `Rp ${value.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`;
 
 const formatDate = (value: string | null) =>
     value
@@ -48,7 +48,8 @@ const formatDate = (value: string | null) =>
         : '-';
 
 const budget = computed(
-    () => `${money(props.campaign.budget_min)} – ${money(props.campaign.budget_max)}`,
+    () =>
+        `${money(props.campaign.budget_min)} – ${money(props.campaign.budget_max)}`,
 );
 
 const period = computed(
@@ -136,7 +137,9 @@ const isActive = computed(
                 </span>
             </div>
 
-            <p class="mt-2 line-clamp-3 text-xs leading-relaxed text-sm-card/75">
+            <p
+                class="mt-2 line-clamp-3 text-xs leading-relaxed text-sm-card/75"
+            >
                 {{ campaign.description }}
             </p>
 
@@ -179,7 +182,9 @@ const isActive = computed(
                 <p class="mt-1 text-xs font-medium text-sm-navy">
                     {{ campaign.support_type || 'Dana' }}
                 </p>
-                <p class="mt-1 line-clamp-2 text-[11px] leading-relaxed text-sm-card/70">
+                <p
+                    class="mt-1 line-clamp-2 text-[11px] leading-relaxed text-sm-card/70"
+                >
                     {{ campaign.benefits || 'Benefit campaign belum diisi.' }}
                 </p>
             </div>
@@ -188,7 +193,8 @@ const isActive = computed(
                 v-if="owner && campaign.proposal_count !== null"
                 class="mt-3 text-[10px] text-sm-card/50"
             >
-                {{ campaign.proposal_count ?? 0 }} proposal masuk ke campaign ini
+                {{ campaign.proposal_count ?? 0 }} proposal masuk ke campaign
+                ini
             </p>
 
             <!-- Aksi pemilik campaign -->
